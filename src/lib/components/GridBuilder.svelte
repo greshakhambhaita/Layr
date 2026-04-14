@@ -111,7 +111,7 @@
           class="h-10 px-4 bg-[var(--accent)] text-white rounded-xl font-bold text-[11px] tracking-wide transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98] shadow-[0_2px_10px_rgba(76,132,245,0.3)] dark:shadow-[0_2px_10px_rgba(107,159,255,0.2)]"
           onclick={() => document.dispatchEvent(new CustomEvent("open-export"))}
         >
-          EXPORT
+          PREVIEW
         </button>
         <button
           class="w-10 h-10 rounded-xl bg-[var(--input-bg)] flex items-center justify-center transition-all hover:bg-[var(--surface-hover)] active:scale-95"

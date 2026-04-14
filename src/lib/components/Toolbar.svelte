@@ -611,7 +611,7 @@
         class="w-full h-12 bg-[var(--accent)] text-white rounded-xl font-bold text-[13px] tracking-wide transition-all hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_25px_var(--accent-glow)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] relative overflow-hidden group/btn btn-primary"
         onclick={() => document.dispatchEvent(new CustomEvent("open-export"))}
       >
-        <span class="relative z-10">CONVERT TO CODE</span>
+        <span class="relative z-10">GRID PREVIEW</span>
         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full shimmer-effect"></div>
       </button>
     {/if}
