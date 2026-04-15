@@ -227,7 +227,7 @@
 </script>
 
 <svelte:head>
-	<title>Bento Grid Builder | Create Beautiful Layouts</title>
+	<title>Layr</title>
 	<meta
 		name="description"
 		content="The most intuitive way to build professional bento-style layouts for your web projects."
