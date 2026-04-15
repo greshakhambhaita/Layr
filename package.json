@@ -18,5 +18,11 @@
 		"svelte": "^5.54.0",
 		"tailwindcss": "^3.4.9",
 		"vite": "^7.3.1"
+	},
+	"dependencies": {
+		"@threlte/core": "^8.5.9",
+		"@threlte/extras": "^9.14.6",
+		"postprocessing": "^6.39.0",
+		"three": "^0.183.2"
 	}
 }

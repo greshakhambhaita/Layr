@@ -1,6 +1,9 @@
 <script>
+	import { Canvas } from "@threlte/core";
 	import { onMount } from "svelte";
 	import { fly } from "svelte/transition";
+	import * as THREE from "three";
+	import Scene from "./Scene.svelte";
 
 	let mounted = $state(false);
 	let baseCanvas, fxCanvas;
@@ -234,59 +237,76 @@
 <main
 	class="relative min-h-screen flex flex-col items-center justify-center bg-black text-slate-50 overflow-hidden"
 >
-	<!-- Grid Animation -->
+	<!-- Layer 0: base grid -->
 	<canvas bind:this={baseCanvas} id="base"></canvas>
+
+	<!-- Layer 1: mouse/ripple glow fx -->
 	<canvas bind:this={fxCanvas} id="fx"></canvas>
 
-	<!-- Content -->
+	<!-- Layer 2: Threlte free-floating scene -->
+	<div class="threlte-wrapper">
+		<Canvas
+			alpha={true}
+			toneMapping={THREE.ACESFilmicToneMapping}
+			toneMappingExposure={1.5}
+		>
+			<Scene />
+		</Canvas>
+	</div>
+
+	<!-- Layer 3: hero text content — pointer-events-none so drags pass through to the canvas -->
 	<div
-		class="relative z-10 w-full flex flex-col items-center pointer-events-none px-6"
+		class="relative z-30 w-full min-h-screen flex items-center justify-center lg:justify-start max-w-7xl mx-auto px-6 pointer-events-none"
 	>
-		{#if mounted}
-			<div
-				class="flex flex-col items-center text-center max-w-4xl"
-				in:fly={{ y: 20, duration: 1000, delay: 600 }}
-			>
-				<h1
-					class="font-prata text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
-				>
-					Design responsive bento grids visually
-				</h1>
-				<p
-					class="font-sans text-lg md:text-xl text-slate-400 mb-12 max-w-2xl font-light leading-relaxed"
-				>
-					Build, customize, and preview layouts across desktop, tablet, and
-					mobile.
-				</p>
-
+		<div
+			class="flex flex-col items-center lg:items-start text-center lg:text-left pointer-events-none w-full"
+		>
+			{#if mounted}
 				<div
-					class="flex flex-wrap items-center justify-center gap-6 pointer-events-auto"
+					class="flex flex-col items-center lg:items-start max-w-2xl"
+					in:fly={{ y: 20, duration: 1000, delay: 600 }}
 				>
-					<a
-						href="/playground"
-						class="group relative px-10 py-5 bg-white text-black font-bold rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(255,255,255,0.15)] hover:shadow-[0_0_100px_rgba(255,255,255,0.3)] transition-all duration-700"
+					<h1
+						class="font-prata text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
 					>
-						<span
-							class="relative z-10 font-bold tracking-tight text-lg font-sans"
-							>Launch Playground</span
-						>
-					</a>
+						Design responsive bento grids visually
+					</h1>
+					<p
+						class="font-sans text-lg md:text-xl text-slate-400 mb-12 max-w-xl font-light leading-relaxed"
+					>
+						Build, customize, and preview layouts across desktop, tablet, and
+						mobile with the most intuitive grid builder.
+					</p>
 
-					<a
-						href="/templates"
-						class="group relative px-10 py-5 border border-white/20 text-white font-bold rounded-2xl overflow-hidden transition-all duration-500 hover:text-black"
+					<div
+						class="flex flex-wrap items-center justify-center lg:justify-start gap-6 pointer-events-auto"
 					>
-						<span
-							class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"
-						></span>
-						<span
-							class="relative z-10 font-bold tracking-tight text-lg font-sans"
-							>Browse Templates</span
+						<a
+							href="/playground"
+							class="group relative px-10 py-5 bg-white text-black font-bold rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(255,255,255,0.15)] hover:shadow-[0_0_100px_rgba(255,255,255,0.3)] transition-all duration-700"
 						>
-					</a>
+							<span
+								class="relative z-10 font-bold tracking-tight text-lg font-sans"
+								>Launch Playground</span
+							>
+						</a>
+
+						<a
+							href="/templates"
+							class="group relative px-10 py-5 border border-white/20 text-white font-bold rounded-2xl overflow-hidden transition-all duration-500 hover:text-black"
+						>
+							<span
+								class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"
+							></span>
+							<span
+								class="relative z-10 font-bold tracking-tight text-lg font-sans"
+								>Browse Templates</span
+							>
+						</a>
+					</div>
 				</div>
-			</div>
-		{/if}
+			{/if}
+		</div>
 	</div>
 </main>
 
@@ -309,5 +329,20 @@
 	#fx {
 		z-index: 1;
 		pointer-events: none;
+	}
+
+	.threlte-wrapper {
+		position: fixed;
+		inset: 0;
+		z-index: 2;
+		pointer-events: auto;
+	}
+
+	.threlte-wrapper :global(canvas) {
+		position: absolute;
+		inset: 0;
+		width: 100% !important;
+		height: 100% !important;
+		background: transparent !important;
 	}
 </style>
