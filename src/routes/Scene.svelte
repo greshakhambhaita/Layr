@@ -14,7 +14,7 @@
 
   const composer = new EffectComposer(renderer);
   const bloom = new BloomEffect({
-    intensity: 0.2,
+    intensity: 0.15,
     luminanceThreshold: 0.2,
     luminanceSmoothing: 0.6,
     mipmapBlur: true,
@@ -193,8 +193,6 @@
         if (child.isMesh) {
           child.material = child.material.clone();
           child.material.color.set(0xffffff);
-          child.material.transparent = true;
-          child.material.opacity = 1.0; // ← 0.0 = invisible, 1.0 = fully opaque
 
           // Use EdgesGeometry instead of WireframeGeometry to remove diagonals
           const edgeGeo = new THREE.EdgesGeometry(child.geometry);
@@ -206,95 +204,79 @@
     });
   });
 
-  // ─── Ripple Wave Effect ───────────────────────────────────────────────────
-  // Instead of continuous repulsion, the cursor spawns an expanding ring.
-  // As the ring sweeps through each surface cube, it briefly pushes it
-  // outward and the cube springs back naturally via lerp toward zero.
+  // ─── Interactive Repulsion (surface layers only) ─────────────────────────
+  // The cursor is always projected to Z=0 in world space (the "front face"
+  // of the group at position.x=1.4). Repulsion is then computed purely in
+  // XY so inner cubes are never reached from the inside.
   let displacements = $state(cubes.map(() => ({ x: 0, y: 0, z: 0 })));
   const mousePosition = new THREE.Vector2();
   const raycaster = new THREE.Raycaster();
   const worldMouse = new THREE.Vector3();
+  // Project onto the front face of the grid cluster (z=0 in group-local space)
   const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
-  // Active ripples pool
-  const ripples = [];
-  let lastRippleAt = 0;
-  const RIPPLE_COOLDOWN = 0.15; // seconds between spawns (throttle)
-  const RIPPLE_SPEED = 1.6; // units / second the ring expands
-  const MAX_RADIUS = 2.2; // ring dies when it exceeds this
-  const RING_WIDTH = 0.45; // half-width of the ripple ring
-  const RIPPLE_STR = 0.3; // peak displacement magnitude
-  const MAX_SURF_DEPTH = 1; // only outer 2 layers react
+  // Track when the cursor last moved so we can fade displacements back to 0
+  let lastMouseMoveAt = 0;
+  const IDLE_RETURN_DELAY = 0.4; // seconds of stillness before returning
 
   $effect(() => {
-    const handlePointerMove = (e) => {
+    const updateMouse = (e) => {
       mousePosition.x = (e.clientX / window.innerWidth) * 2 - 1;
       mousePosition.y = -(e.clientY / window.innerHeight) * 2 + 1;
+      lastMouseMoveAt = performance.now() / 1000;
     };
-    window.addEventListener("pointermove", handlePointerMove);
-    return () => window.removeEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointermove", updateMouse);
+    return () => window.removeEventListener("pointermove", updateMouse);
   });
 
-  useTask((delta) => {
+  useTask(() => {
     if (!camera.current) return;
 
     const now = performance.now() / 1000;
+    const isIdle = now - lastMouseMoveAt > IDLE_RETURN_DELAY;
 
-    // Project cursor to grid-local XY plane
     raycaster.setFromCamera(mousePosition, camera.current);
     raycaster.ray.intersectPlane(plane, worldMouse);
+
+    // Anchor offset — the group's world position
     const anchor = new THREE.Vector3(1.4, 0.2, 0);
-    const lm = worldMouse.clone().sub(anchor); // local mouse
+    const localMouse = worldMouse.clone().sub(anchor);
 
-    // Spawn a new ripple if cursor is near the grid and cooldown has passed
-    const distToCenter = Math.sqrt(lm.x * lm.x + lm.y * lm.y);
-    if (now - lastRippleAt > RIPPLE_COOLDOWN && distToCenter < MAX_RADIUS) {
-      ripples.push({ ox: lm.x, oy: lm.y, radius: 0, age: 0 });
-      lastRippleAt = now;
-    }
+    const radius = 1.2;
+    const strength = 0.8;
+    // Surface layer limit: only repel cubes 0 or 1 layers deep from surface
+    const MAX_SURFACE_DEPTH = 1;
 
-    // Advance and prune ripples
-    for (let r = ripples.length - 1; r >= 0; r--) {
-      ripples[r].radius += RIPPLE_SPEED * delta;
-      ripples[r].age += delta;
-      if (ripples[r].radius - RING_WIDTH > MAX_RADIUS) {
-        ripples.splice(r, 1);
-      }
-    }
-
-    // Compute target displacement per surface cube from all active ripples
-    for (let i = 0; i < cubes.length; i++) {
-      const cube = cubes[i];
+    displacements = cubes.map((cube, i) => {
       let tx = 0,
-        ty = 0;
+        ty = 0,
+        tz = 0;
 
-      if (cube.surfaceDepth <= MAX_SURF_DEPTH) {
-        for (const rip of ripples) {
-          const dx = cube.bx - rip.ox;
-          const dy = cube.by - rip.oy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 0.0001) continue;
+      if (!isIdle && cube.surfaceDepth <= MAX_SURFACE_DEPTH) {
+        // Only measure XY distance — cursor is always at z≈0 so comparing
+        // full 3D distance would always "reach inside" inner layers.
+        const dx = cube.bx - localMouse.x;
+        const dy = cube.by - localMouse.y;
+        const dist2D = Math.sqrt(dx * dx + dy * dy);
 
-          const ringDist = Math.abs(dist - rip.radius);
-          if (ringDist < RING_WIDTH) {
-            // sin envelope — peaks as ring edge passes the cube
-            const t = 1 - ringDist / RING_WIDTH;
-            // age-based fade: ring weakens as it gets larger
-            const fade = Math.exp(-rip.age * 1.2);
-            const push = Math.sin(t * Math.PI) * RIPPLE_STR * fade;
-            // depth fade: second layer gets 60% of outer layer's push
-            const layerFade = 1 - cube.surfaceDepth * 0.4;
-            tx += (dx / dist) * push * layerFade;
-            ty += (dy / dist) * push * layerFade;
-          }
+        if (dist2D < radius && dist2D > 0.0001) {
+          // Fade force for deeper surface layers (0 = full, 1 = half)
+          const layerFade = 1 - cube.surfaceDepth * 0.5;
+          const power =
+            Math.pow(1 - dist2D / radius, 1.8) * strength * layerFade;
+          tx = (dx / dist2D) * power;
+          ty = (dy / dist2D) * power;
+          // No Z push — keeps the surface layer intact visually
         }
       }
-
-      // Lerp toward target (new ripple impulse or back to 0 when no ripple)
-      displacements[i].x += (tx - displacements[i].x) * 0.2;
-      displacements[i].y += (ty - displacements[i].y) * 0.2;
-      displacements[i].z += (0 - displacements[i].z) * 0.2;
-    }
+      // isIdle → tx/ty/tz stay 0, so lerp pulls cube back to origin
+      const lerpSpeed = isIdle ? 0.06 : 0.12; // slower return when idle
+      return {
+        x: displacements[i].x + (tx - displacements[i].x) * lerpSpeed,
+        y: displacements[i].y + (ty - displacements[i].y) * lerpSpeed,
+        z: displacements[i].z + (tz - displacements[i].z) * lerpSpeed,
+      };
+    });
   });
 </script>
 
