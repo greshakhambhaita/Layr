@@ -1,5 +1,5 @@
 <script>
-  import favicon from "$lib/assets/LayrIcon.svg";
+  import favicon from "$lib/assets/favicon.svg";
   import { themeStore } from "$lib/themeStore.svelte.js";
   import { onMount } from "svelte";
   import "../app.css";
