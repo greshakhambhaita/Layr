@@ -32,6 +32,7 @@
   let copied = $state(false);
   let colorPickerOpen = $state(false);
   let imageEditorOpen = $state(false);
+  let fitDropdownOpen = $state(false);
 
   // Calculate cell aspect ratio for image editor
   let cellAspectRatio = $derived.by(() => {
@@ -98,28 +99,13 @@
   class:gap-8={!isMobile}
   class:gap-4={isMobile}
 >
-  <!-- Mobile Header -->
-  {#if isMobile}
-    <div class="flex items-center justify-between pb-2 border-b border-[var(--border-subtle)]">
-      <h2 class="text-[13px] font-bold text-[var(--text-main)]">Grid Settings</h2>
-      <button 
-        class="w-8 h-8 rounded-lg bg-[var(--input-bg)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface-hover)] transition-all"
-        onclick={onClose}
-        aria-label="Close settings"
-      >
-        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <line x1="18" y1="6" x2="6" y2="18"/>
-          <line x1="6" y1="6" x2="18" y2="18"/>
-        </svg>
-      </button>
-    </div>
-  {/if}
+
 
   <!-- Theme Toggle -->
   <div class="flex items-center justify-between group">
     <span class="text-[10px] font-bold text-[var(--text-subtle)] uppercase tracking-wider transition-colors group-hover:text-[var(--text-muted)]">Theme</span>
     <button
-      class="w-10 h-6 rounded-full bg-[var(--input-bg)] relative transition-all hover:shadow-[0_0_15px_var(--accent-glow)] active:scale-95"
+      class="w-10 h-6 rounded-full bg-[var(--input-bg)] relative transition-all active:scale-95"
       onclick={() => themeStore.toggle()}
       aria-label="Toggle dark mode"
     >
@@ -129,20 +115,12 @@
         class:left-5={themeStore.isDark}
       >
         {#if themeStore.isDark}
-          <svg class="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+          <svg class="w-2.5 h-2.5 text-[var(--app-bg)]" viewBox="0 0 24 24" fill="currentColor">
             <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
           </svg>
         {:else}
-          <svg class="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <svg class="w-2.5 h-2.5 text-[var(--app-bg)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
             <circle cx="12" cy="12" r="5"/>
-            <line x1="12" y1="1" x2="12" y2="3"/>
-            <line x1="12" y1="21" x2="12" y2="23"/>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-            <line x1="1" y1="12" x2="3" y2="12"/>
-            <line x1="21" y1="12" x2="23" y2="12"/>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
           </svg>
         {/if}
       </div>
@@ -228,7 +206,7 @@
           disabled={!isContiguous || multiSelectCount === 0}
           class="h-10 flex items-center justify-center gap-2 px-4 rounded-lg text-[12px] font-semibold transition-all shadow-none
             {isContiguous && multiSelectCount >= 2
-            ? 'bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] active:scale-[0.98]'
+            ? 'bg-[var(--accent)] text-[var(--app-bg)] hover:opacity-90 active:scale-[0.98]'
             : 'bg-[var(--input-bg)] text-[var(--text-subtle)] cursor-not-allowed'}"
           onclick={handleUnion}
         >
@@ -400,6 +378,7 @@
     <div class="flex flex-col gap-4" class:opacity-40={multiSelectCount === 0} class:pointer-events-none={multiSelectCount === 0}>
       {#if primarySelectedMeta?.type === "image"}
         <div class="flex flex-col gap-3">
+          <!-- Image URL Input -->
           <div class="relative group">
             <input
               type="text"
@@ -411,8 +390,7 @@
             />
             <button
               class="absolute right-2 top-1.5 p-1.5 text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-              onclick={() =>
-                document.getElementById("sidebar-file-upload").click()}
+              onclick={() => document.getElementById("sidebar-file-upload").click()}
               aria-label="Upload image"
             >
               <svg
@@ -423,10 +401,11 @@
                 stroke-width="2.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                ><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline
-                  points="17 8 12 3 7 8"
-                /><line x1="12" y1="3" x2="12" y2="15" /></svg
               >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
               <input
                 id="sidebar-file-upload"
                 type="file"
@@ -447,8 +426,7 @@
             </button>
           </div>
 
-          <!-- Edit Image Button (Only show if exactly one cell is selected, or support multi-crop?) -->
-          <!-- For now let's keep it for one or simply the primary one -->
+          <!-- Edit Image Button -->
           {#if primarySelectedMeta?.imageUrl && multiSelectCount === 1}
             <button
               class="w-full h-10 flex items-center justify-center gap-2 bg-[var(--accent)]/10 hover:bg-[var(--accent)]/20 text-[var(--accent)] rounded-lg text-[11px] font-bold uppercase tracking-wide transition-all"
@@ -465,32 +443,68 @@
             </button>
           {/if}
 
+          <!-- Image Settings: Fit and Scale -->
           <div class="flex gap-2">
+            <!-- Custom Fit Dropdown -->
             <div class="relative flex-1">
-              <select
-                value={primarySelectedMeta?.imageStyle?.fit || 'cover'}
-                onchange={(e) =>
-                  store.updateSelectedCells({
-                    imageStyle: {
-                      ...primarySelectedMeta.imageStyle,
-                      fit: e.target.value,
-                    },
-                  })}
-                class="w-full h-10 bg-[var(--input-bg)] rounded-lg px-4 appearance-none text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] outline-none cursor-pointer"
+              <button
+                class="w-full h-10 bg-[var(--input-bg)] hover:bg-[var(--surface-hover)] rounded-lg px-4 flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all outline-none"
+                onclick={() => (fitDropdownOpen = !fitDropdownOpen)}
               >
-                <option value="cover">COVER</option>
-                <option value="contain">CONTAIN</option>
-                <option value="fill">STRETCH</option>
-              </select>
-              <svg
-                class="absolute right-3 top-4 w-2 h-2 text-[var(--text-subtle)] pointer-events-none"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="4"><polyline points="6 9 12 15 18 9" /></svg
-              >
+                <span>{primarySelectedMeta?.imageStyle?.fit || 'cover'}</span>
+                <svg
+                  class="w-2 h-2 text-[var(--text-subtle)] transition-transform duration-200"
+                  class:rotate-180={fitDropdownOpen}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="5"
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {#if fitDropdownOpen}
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div 
+                  class="fixed inset-0 z-[100]" 
+                  onclick={() => (fitDropdownOpen = false)}
+                ></div>
+
+                <div 
+                  class="absolute top-full left-0 right-0 mt-1.5 bg-[var(--surface)] border border-[var(--border-subtle)] rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] z-[101] overflow-hidden animate-dropdownIn"
+                >
+                  {#each [
+                    { value: 'cover', label: 'COVER' },
+                    { value: 'contain', label: 'CONTAIN' },
+                    { value: 'fill', label: 'STRETCH' }
+                  ] as option}
+                    <button
+                      class="w-full px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider transition-all"
+                      class:bg-[var(--accent)]={primarySelectedMeta?.imageStyle?.fit === option.value}
+                      class:text-[var(--app-bg)]={primarySelectedMeta?.imageStyle?.fit === option.value}
+                      class:text-[var(--text-muted)]={primarySelectedMeta?.imageStyle?.fit !== option.value}
+                      class:hover:bg-[var(--surface-hover)]={primarySelectedMeta?.imageStyle?.fit !== option.value}
+                      class:hover:text-[var(--text-main)]={primarySelectedMeta?.imageStyle?.fit !== option.value}
+                      onclick={() => {
+                        store.updateSelectedCells({
+                          imageStyle: {
+                            ...primarySelectedMeta.imageStyle,
+                            fit: option.value,
+                          },
+                        });
+                        fitDropdownOpen = false;
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
             </div>
 
+            <!-- Scale Controls -->
             <div class="flex items-center bg-[var(--input-bg)] rounded-lg px-1">
               <button
                 class="w-8 h-8 flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--accent)] text-lg font-bold"
@@ -522,17 +536,17 @@
             </div>
           </div>
 
-          <!-- Position indicator (when offset is applied) -->
-          {#if (selectedMeta?.imageStyle?.offsetX || 0) !== 0 || (selectedMeta?.imageStyle?.offsetY || 0) !== 0}
+          <!-- Position indicator -->
+          {#if (primarySelectedMeta?.imageStyle?.offsetX || 0) !== 0 || (primarySelectedMeta?.imageStyle?.offsetY || 0) !== 0}
             <div class="flex items-center justify-between px-3 py-2 bg-[var(--input-bg)] rounded-lg">
               <span class="text-[10px] text-[var(--text-muted)]">
-                Position: X {Math.round(selectedMeta?.imageStyle?.offsetX || 0)}%, Y {Math.round(selectedMeta?.imageStyle?.offsetY || 0)}%
+                Position: X {Math.round(primarySelectedMeta?.imageStyle?.offsetX || 0)}%, Y {Math.round(primarySelectedMeta?.imageStyle?.offsetY || 0)}%
               </span>
               <button
                 class="text-[10px] font-medium text-[var(--accent)] hover:underline"
-                onclick={() => store.updateCell(selectedMeta.id, {
+                onclick={() => store.updateCell(primarySelectedMeta.id, {
                   imageStyle: {
-                    ...selectedMeta.imageStyle,
+                    ...primarySelectedMeta.imageStyle,
                     offsetX: 0,
                     offsetY: 0,
                     scale: 1
@@ -608,11 +622,10 @@
   >
     {#if !isMobile}
       <button
-        class="w-full h-12 bg-[var(--accent)] text-white rounded-xl font-bold text-[13px] tracking-wide transition-all hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.98] shadow-[0_8px_25px_var(--accent-glow)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)] relative overflow-hidden group/btn btn-primary"
+        class="w-full h-12 bg-[var(--accent)] text-[var(--app-bg)] rounded-xl font-bold text-[12px] tracking-[0.15em] transition-all hover:opacity-90 hover:scale-[1.01] active:scale-[0.98] shadow-[0_10px_30px_var(--accent-glow)] relative overflow-hidden group/btn"
         onclick={() => document.dispatchEvent(new CustomEvent("open-export"))}
       >
         <span class="relative z-10">GRID PREVIEW</span>
-        <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full shimmer-effect"></div>
       </button>
     {/if}
     <button
@@ -648,16 +661,15 @@
       transform: translateY(0) scale(1);
     }
   }
-  @keyframes shimmer {
+  @keyframes dropdownIn {
     from {
-      transform: translateX(-100%);
+      opacity: 0;
+      transform: translateY(-5px) scale(0.98);
     }
     to {
-      transform: translateX(100%);
+      opacity: 1;
+      transform: translateY(0) scale(1);
     }
-  }
-  .btn-primary:hover .shimmer-effect {
-    animation: shimmer 1.5s infinite;
   }
   .animate-dropdownIn {
     animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);

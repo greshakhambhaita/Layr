@@ -14,9 +14,9 @@
 
   const composer = new EffectComposer(renderer);
   const bloom = new BloomEffect({
-    intensity: 0.15,
-    luminanceThreshold: 0.2,
-    luminanceSmoothing: 0.6,
+    intensity: 0.8, // Increased from 0.21 for more glow
+    luminanceThreshold: 0.15,
+    luminanceSmoothing: 0.4,
     mipmapBlur: true,
   });
 
@@ -157,13 +157,19 @@
     };
   });
 
-  const identityQuat = new THREE.Quaternion(); // (0, 0, 0, 1) — neutral orientation
+  const identityQuat = new THREE.Quaternion();
+  let baseYaw = 0;
+  const baseTilt = new THREE.Euler(0.2, 0.4, 0); // Slight tilt
 
   useTask(() => {
     const now = performance.now() / 1000;
     const idleForRotation = now - lastDragAt > 0.6; // grace period before returning
 
     if (idleForRotation) {
+      // Slow idle spin
+      baseYaw += 0.002;
+      identityQuat.setFromEuler(new THREE.Euler(baseTilt.x, baseYaw, baseTilt.z));
+      
       // Slerp back to original orientation — faster return
       targetQuat.slerp(identityQuat, 0.045);
     }
@@ -184,6 +190,27 @@
     floatY = Math.sin(floatTime * 0.9) * 0.1;
   });
 
+  // ─── Color Animation ──────────────────────────────────────────────────────
+  let colorCycleTime = $state(0);
+  let fillCol = $state("#4488ff");
+  let coreCol = $state("#ffaa55");
+
+  const startFill = new THREE.Color("#4488ff"); // Blue
+  const endFill = new THREE.Color("#ff44bb");   // Pink
+  const startCore = new THREE.Color("#ffaa55"); // Orange
+  const endCore = new THREE.Color("#ffccaa");   // Peach
+
+  useTask((delta) => {
+    colorCycleTime += delta * 0.5; // slow speed
+    const t = (Math.sin(colorCycleTime) + 1) / 2; // 0 to 1
+
+    const tempFill = startFill.clone().lerp(endFill, t);
+    const tempCore = startCore.clone().lerp(endCore, t);
+
+    fillCol = `#${tempFill.getHexString()}`;
+    coreCol = `#${tempCore.getHexString()}`;
+  });
+
   $effect(() => {
     if (!$gltf) return;
 
@@ -193,6 +220,8 @@
         if (child.isMesh) {
           child.material = child.material.clone();
           child.material.color.set(0xffffff);
+          child.material.emissive.set(0x333333); // subtle base glow
+          child.material.emissiveIntensity = 2.0;
 
           // Use EdgesGeometry instead of WireframeGeometry to remove diagonals
           const edgeGeo = new THREE.EdgesGeometry(child.geometry);
@@ -229,6 +258,11 @@
     return () => window.removeEventListener("pointermove", updateMouse);
   });
 
+  // ─── Responsive Positioning ─────────────────────────────────────────────
+  let groupX = $derived($size.width < 768 ? 0 : 1.4);
+  let groupY = $derived($size.width < 768 ? -0.8 : 0.2);
+  let groupScale = $derived($size.width < 768 ? 0.75 : 1.0);
+
   useTask(() => {
     if (!camera.current) return;
 
@@ -238,8 +272,8 @@
     raycaster.setFromCamera(mousePosition, camera.current);
     raycaster.ray.intersectPlane(plane, worldMouse);
 
-    // Anchor offset — the group's world position
-    const anchor = new THREE.Vector3(1.4, 0.2, 0);
+    // Anchor offset — use the dynamic groupX/groupY
+    const anchor = new THREE.Vector3(groupX, groupY, 0);
     const localMouse = worldMouse.clone().sub(anchor);
 
     const radius = 1.2;
@@ -253,24 +287,20 @@
         tz = 0;
 
       if (!isIdle && cube.surfaceDepth <= MAX_SURFACE_DEPTH) {
-        // Only measure XY distance — cursor is always at z≈0 so comparing
-        // full 3D distance would always "reach inside" inner layers.
+        // Only measure XY distance
         const dx = cube.bx - localMouse.x;
         const dy = cube.by - localMouse.y;
         const dist2D = Math.sqrt(dx * dx + dy * dy);
 
         if (dist2D < radius && dist2D > 0.0001) {
-          // Fade force for deeper surface layers (0 = full, 1 = half)
           const layerFade = 1 - cube.surfaceDepth * 0.5;
           const power =
             Math.pow(1 - dist2D / radius, 1.8) * strength * layerFade;
           tx = (dx / dist2D) * power;
           ty = (dy / dist2D) * power;
-          // No Z push — keeps the surface layer intact visually
         }
       }
-      // isIdle → tx/ty/tz stay 0, so lerp pulls cube back to origin
-      const lerpSpeed = isIdle ? 0.06 : 0.12; // slower return when idle
+      const lerpSpeed = isIdle ? 0.06 : 0.12;
       return {
         x: displacements[i].x + (tx - displacements[i].x) * lerpSpeed,
         y: displacements[i].y + (ty - displacements[i].y) * lerpSpeed,
@@ -282,14 +312,16 @@
 
 <T.PerspectiveCamera makeDefault fov={45} position={[0, 0.4, 5]} />
 
-<T.AmbientLight intensity={0.5} />
-<T.DirectionalLight position={[4, 6, 3]} intensity={1.2} color="#ffffff" />
-<T.DirectionalLight position={[-3, 2, -4]} intensity={0.6} color="#ffffff" />
+<T.AmbientLight intensity={0.4} />
+<T.DirectionalLight position={[4, 6, 3]} intensity={1.8} color="#ffffff" />
+<T.DirectionalLight position={[-3, 2, -4]} intensity={2.5} color={fillCol} /> 
+<T.PointLight position={[0, 0, 0]} intensity={25} distance={10} color={coreCol} />
 
 <!-- Main anchor group — floats as a whole, quaternion rotatable to any angle -->
 <T.Group
-  position.x={1.4}
-  position.y={0.2 + floatY}
+  position.x={groupX}
+  position.y={groupY + floatY}
+  scale={groupScale}
   quaternion={[qx, qy, qz, qw]}
 >
   {#each clones as clone, i (cubes[i].id)}

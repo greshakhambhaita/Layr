@@ -6,41 +6,41 @@
 
 @layer base {
   :root {
-    --app-bg: #f8fafc;
-    --canvas-bg: #ffffff;
+    --app-bg: #ffffff;
+    --canvas-bg: #fcfcfc;
     --sidebar-bg: #ffffff;
-    --accent: #3b82f6;
-    --accent-hover: #2563eb;
-    --accent-glow: rgba(59, 130, 246, 0.5);
-    --text-main: #0f172a;
+    --accent: #000000;
+    --accent-hover: #1e293b;
+    --accent-glow: rgba(0, 0, 0, 0.1);
+    --text-main: #000000;
     --text-muted: #64748b;
     --text-subtle: #94a3b8;
-    --border-subtle: #e2e8f0;
+    --border-subtle: #efefef;
     --surface: #ffffff;
-    --surface-hover: #f1f5f9;
-    --surface-active: #e2e8f0;
-    --overlay-bg: rgba(15, 23, 42, 0.45);
-    --input-bg: #f1f5f9;
-    --code-bg: #f8fafc;
+    --surface-hover: #f8fafc;
+    --surface-active: #f1f5f9;
+    --overlay-bg: rgba(0, 0, 0, 0.5);
+    --input-bg: #f8fafc;
+    --code-bg: #fafafa;
   }
-
+  
   .dark {
-    --app-bg: #020617;
-    --canvas-bg: #0f172a;
-    --sidebar-bg: #020617;
-    --accent: #60a5fa;
-    --accent-hover: #93c5fd;
-    --accent-glow: rgba(96, 165, 250, 0.4);
-    --text-main: #f8fafc;
+    --app-bg: #000000;
+    --canvas-bg: #000000;
+    --sidebar-bg: #000000;
+    --accent: #ffffff;
+    --accent-hover: #e2e8f0;
+    --accent-glow: rgba(255, 255, 255, 0.15);
+    --text-main: #ffffff;
     --text-muted: #94a3b8;
     --text-subtle: #475569;
-    --border-subtle: #1e293b;
-    --surface: #111827;
-    --surface-hover: #1e293b;
-    --surface-active: #334155;
-    --overlay-bg: rgba(0, 0, 0, 0.7);
-    --input-bg: #1e293b;
-    --code-bg: #020617;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --surface: #000000;
+    --surface-hover: #111111;
+    --surface-active: #222222;
+    --overlay-bg: rgba(0, 0, 0, 0.85);
+    --input-bg: #111111;
+    --code-bg: #000000;
   }
 
   html {

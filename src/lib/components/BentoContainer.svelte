@@ -1,30 +1,39 @@
 <script>
+  import { useDrag } from "$lib/composables/useDrag.svelte.js";
+  import { usePan } from "$lib/composables/usePan.svelte.js";
+  import { useResize } from "$lib/composables/useResize.svelte.js";
   import { onMount } from "svelte";
   import GridCell from "./GridCell.svelte";
-  import { themeStore } from '$lib/themeStore.svelte.js';
-  import { usePan } from "$lib/composables/usePan.svelte.js";
-  import { useDrag } from "$lib/composables/useDrag.svelte.js";
-  import { useResize } from "$lib/composables/useResize.svelte.js";
 
-  let { store } = $props();
+  let { store, isMultiSelectMode = false } = $props();
 
   let bentoEl = $state(null);
   let bentoScaleWrap = $state(null);
   let isMobile = $state(false);
-  let isMultiSelectMode = $state(false);
 
   // Initialize Composables
-  const pan = usePan(store, () => bentoEl, () => bentoScaleWrap);
-  const drag = useDrag(store, () => bentoEl, () => bentoScaleWrap, {
-    isResizing: () => resize.isResizing
-  });
+  const pan = usePan(
+    store,
+    () => bentoEl,
+    () => bentoScaleWrap,
+  );
+  const drag = useDrag(
+    store,
+    () => bentoEl,
+    () => bentoScaleWrap,
+    {
+      isResizing: () => resize.isResizing,
+    },
+  );
   const resize = useResize(store, () => bentoEl, {
-    getSlotFromPoint: drag.getSlotFromPoint
+    getSlotFromPoint: drag.getSlotFromPoint,
   });
 
   // Track isMobile for the template
   onMount(() => {
-    const checkMobile = () => { isMobile = window.innerWidth < 1024; };
+    const checkMobile = () => {
+      isMobile = window.innerWidth < 1024;
+    };
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -32,10 +41,14 @@
 
   // Compute Hero ID
   let heroId = $derived.by(() => {
-    let max = 0, hId = null;
+    let max = 0,
+      hId = null;
     Object.entries(store.cellMeta).forEach(([id, m]) => {
       let s = m.colSpan * m.rowSpan;
-      if (s > max) { max = s; hId = id; }
+      if (s > max) {
+        max = s;
+        hId = id;
+      }
     });
     return hId;
   });
@@ -64,38 +77,6 @@
   ontouchend={handleMouseUp}
 />
 
-<!-- Mobile Multi-Select Toggle Button -->
-{#if isMobile && Object.keys(store.cellMeta).length > 0}
-  <button
-    class="lg:hidden fixed bottom-20 right-4 z-[90] w-12 h-12 rounded-full flex items-center justify-center transition-all active:scale-95"
-    class:bg-[var(--accent)]={isMultiSelectMode}
-    class:text-white={isMultiSelectMode}
-    class:bg-[var(--surface)]={!isMultiSelectMode}
-    class:text-[var(--accent)]={!isMultiSelectMode}
-    class:border-2={!isMultiSelectMode}
-    class:border-[var(--accent)]={!isMultiSelectMode}
-    onclick={() => (isMultiSelectMode = !isMultiSelectMode)}
-    aria-label="Toggle multi-select mode"
-  >
-    <svg
-      class="w-5 h-5"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2.5"
-    >
-      {#if isMultiSelectMode}
-        <polyline points="9 11 12 14 22 4" />
-        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-      {:else}
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        <line x1="9" y1="9" x2="15" y2="15" />
-        <line x1="15" y1="9" x2="9" y2="15" />
-      {/if}
-    </svg>
-  </button>
-{/if}
-
 <div
   class="w-full flex justify-center items-center overflow-visible relative group/bento transition-all duration-300"
   bind:this={bentoScaleWrap}
@@ -104,7 +85,11 @@
     height: {isMobile
     ? scaledHeight + 40 + 'px'
     : store.gridHeight * pan.scale + 'px'};
-    cursor: {pan.isPanning ? 'grabbing' : pan.isSpacePressed ? 'grab' : 'default'};
+    cursor: {pan.isPanning
+    ? 'grabbing'
+    : pan.isSpacePressed
+      ? 'grab'
+      : 'default'};
     touch-action: none;
   "
   onwheel={pan.handleWheel}
@@ -119,7 +104,9 @@
     <div
       bind:this={bentoEl}
       class="bento absolute top-0 left-0 z-10 rounded-[2px] grid transition-transform p-0"
-      class:no-transition={drag.isDragging || resize.isResizing || pan.isPanning}
+      class:no-transition={drag.isDragging ||
+        resize.isResizing ||
+        pan.isPanning}
       style="
         width: {store.gridWidth}px;
         height: {store.gridHeight}px;
@@ -141,11 +128,25 @@
       <!-- Cells -->
       {#each Object.values(store.cellMeta) as meta (meta.id)}
         <div
-          class="contents"
+          class="contents {isMultiSelectMode ? 'touch-none' : ''}"
           role="button"
           tabindex="0"
-          onmousedown={(e) => drag.handleDragStart(e, meta.id, pan.scale, isMobile, isMultiSelectMode)}
-          ontouchstart={(e) => drag.handleDragStart(e, meta.id, pan.scale, isMobile, isMultiSelectMode)}
+          onmousedown={(e) =>
+            drag.handleDragStart(
+              e,
+              meta.id,
+              pan.scale,
+              isMobile,
+              isMultiSelectMode,
+            )}
+          ontouchstart={(e) =>
+            drag.handleDragStart(
+              e,
+              meta.id,
+              pan.scale,
+              true, // Force isMobile true for touch events to respect the toggle
+              isMultiSelectMode,
+            )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ")
               store.toggleSelection(meta.id, e.shiftKey);
@@ -159,7 +160,8 @@
               store.selectedCellIds.size > 1}
             isHero={heroId === meta.id}
             isDragging={drag.dragSourceId === meta.id}
-            onResizeStart={(id, corner, cx, cy) => resize.handleResizeStart(id, corner, cx, cy, pan.scale)}
+            onResizeStart={(id, corner, cx, cy) =>
+              resize.handleResizeStart(id, corner, cx, cy, pan.scale)}
           />
         </div>
       {/each}
@@ -169,7 +171,7 @@
         <div
           class="snap-indicator absolute pointer-events-none z-10 transition-all duration-200 rounded-[4px] border-[3px] shadow-sm animate-pulseFast
           {drag.snapStatus === 'free'
-            ? 'bg-blue-500/20 border-blue-500 shadow-blue-500/40'
+            ? 'bg-[var(--accent)]/10 border-[var(--accent)] shadow-[0_5px_15px_var(--accent-glow)]'
             : ''}
           {drag.snapStatus === 'swap'
             ? 'bg-amber-400/20 border-amber-500 shadow-amber-500/40'
@@ -178,7 +180,8 @@
             ? 'bg-red-900/30 border-red-600 shadow-red-600/40'
             : ''}"
           style="
-          grid-area: {drag.snapSlot.r + 1} / {drag.snapSlot.c + 1} / {drag.snapSlot.r +
+          grid-area: {drag.snapSlot.r + 1} / {drag.snapSlot.c + 1} / {drag
+            .snapSlot.r +
             1 +
             store.cellMeta[drag.dragSourceId].rowSpan} / {drag.snapSlot.c +
             1 +
@@ -202,7 +205,7 @@
         <div
           class="absolute border-[2.5px] border-dashed rounded-[4px] pointer-events-none z-20 shadow-inner
           {!resize.resizeGhost.blocked
-            ? 'border-blue-500 bg-blue-500/10'
+            ? 'border-[var(--accent)] bg-[var(--accent)]/5'
             : 'border-red-500 bg-red-500/10'}"
           style="
           top: {resize.resizeGhost.top}px;
@@ -279,10 +282,11 @@
         height: {drag.ghostPos.h}px;
         background: {store.cellMeta[drag.dragSourceId].hex};
       "
-    >
-    </div>
+    ></div>
   {/if}
+
 </div>
+
 
 <style>
   @keyframes ghostIn {

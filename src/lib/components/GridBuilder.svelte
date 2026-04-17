@@ -13,6 +13,7 @@
   let isExportOpen = $state(false);
   let isMobileToolbarOpen = $state(false);
   let isMobile = $state(false);
+  let isMultiSelectMode = $state(false);
 
   onMount(() => {
     store.loadFromLocalStorage();
@@ -37,30 +38,63 @@
 
 <div
   id="builder-view"
-  class="flex flex-col lg:flex-row h-screen w-full overflow-hidden animate-viewFadeIn"
+  class="flex h-screen w-full overflow-hidden bg-[var(--app-bg)] animate-viewFadeIn"
 >
-  <!-- Logo - Top Left Corner -->
-  <a 
-    href="/" 
-    class="fixed top-6 left-6 z-50 group flex items-center bg-[var(--surface)]/20 backdrop-blur-md transition-all duration-500 hover:bg-[var(--surface)]/40 hover:shadow-[0_4px_16px_rgba(0,0,0,0.03)] dark:hover:shadow-[0_4px_16px_rgba(0,0,0,0.2)] border-none rounded-none"
-  >
-    <div class="px-3 py-2 flex items-center justify-center">
-      <img 
-        src={Logo} 
-        alt="Project Logo" 
-        class="h-8 sm:h-9 w-auto opacity-40 contrast-[1.1] dark:invert dark:brightness-[1.15] group-hover:opacity-100 transition-all duration-500"
-      />
-    </div>
-  </a>
+  <!-- Top Bar -->
+  <div class="fixed top-6 left-0 right-0 z-50 flex items-center px-8 pointer-events-none">
 
-  <!-- Breakpoint Selector - Top Center -->
-  <div class="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center">
-    <BreakpointSelector {store} />
+    <!-- LAYR wordmark — left on lg, hidden on mobile (shown inside centered group) -->
+    <a
+      href="/"
+      class="hidden lg:flex pointer-events-auto group items-center transition-all duration-500"
+    >
+      <span class="text-[10px] tracking-[0.3em] font-medium text-[var(--text-main)] opacity-40 group-hover:opacity-100 transition-opacity">LAYR</span>
+    </a>
+
+    <!-- Device selector: absolutely centered on lg; inline centered group on mobile -->
+    <div class="pointer-events-auto lg:absolute lg:left-1/2 lg:-translate-x-1/2 flex items-center gap-2 mx-auto lg:mx-0">
+
+      <!-- LAYR — shown inline only on mobile -->
+      <a
+        href="/"
+        class="lg:hidden group flex items-center transition-all duration-500"
+      >
+        <span class="text-[10px] tracking-[0.3em] font-medium text-[var(--text-main)] opacity-40 group-hover:opacity-100 transition-opacity">LAYR</span>
+      </a>
+
+      <!-- Divider — mobile only -->
+      <div class="lg:hidden w-px h-3 bg-[var(--border-subtle)] opacity-60"></div>
+
+      <!-- Device Breakpoint Selector -->
+      <BreakpointSelector {store} />
+
+      <!-- Multi-select toggle — mobile/tablet only (desktop uses Shift+Click) -->
+      {#if !store.isPreviewMode && Object.keys(store.cellMeta).length > 0}
+        <button
+          class="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all active:scale-90 border border-[var(--border-subtle)] backdrop-blur-md {isMultiSelectMode
+            ? 'bg-[var(--accent)] text-[var(--app-bg)] border-[var(--accent)]'
+            : 'bg-[var(--input-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)]'}"
+          onclick={() => (isMultiSelectMode = !isMultiSelectMode)}
+          aria-label="Toggle multi-select mode"
+          title="Multi-select cells"
+        >
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            {#if isMultiSelectMode}
+              <path d="M20 6L9 17l-5-5" stroke-width="3" />
+            {:else}
+              <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 1.5" />
+              <path d="M8 8h1M13 8h1M8 13h1M13 13h1" stroke-linecap="round" stroke-width="3" />
+            {/if}
+          </svg>
+        </button>
+      {/if}
+
+    </div>
   </div>
 
   <!-- Canvas / Main Area -->
   <main
-    class="flex-1 relative overflow-auto bg-[var(--app-bg)] flex items-center justify-center p-4 pt-20 pb-24 sm:p-6 sm:pt-20 sm:pb-24 lg:p-12 lg:pt-20 lg:pb-12"
+    class="flex-1 relative overflow-auto flex items-center justify-center p-6 lg:p-12"
   >
     <div class="flex items-center justify-center w-full h-full">
       {#key store.currentBreakpoint}
@@ -70,18 +104,20 @@
             <ResponsivePreview {store} />
           {:else}
             <!-- Desktop Edit Mode -->
-            <BentoContainer {store} />
+            <BentoContainer {store} {isMultiSelectMode} />
           {/if}
         </div>
       {/key}
     </div>
   </main>
 
-  <!-- Desktop Sidebar -->
+  <!-- Desktop Sidebar — Anchored full length -->
   <aside
-    class="hidden lg:block w-[300px] xl:w-[340px] bg-[var(--sidebar-bg)] h-full overflow-y-auto animate-stageSlideIn border-l border-[var(--border-subtle)]"
+    class="hidden lg:flex flex-col w-[340px] xl:w-[380px] h-full border-l border-[var(--border-subtle)] bg-[var(--surface)] animate-stageSlideIn relative z-30"
   >
-    <Toolbar {store} />
+    <div class="flex-1 overflow-y-auto">
+      <Toolbar {store} />
+    </div>
   </aside>
 
   <!-- Mobile Bottom Bar -->
@@ -93,7 +129,7 @@
     >
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center">
-          <svg class="w-4 h-4 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <svg class="w-4 h-4 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <rect x="3" y="3" width="7" height="7" rx="1"/>
             <rect x="14" y="3" width="7" height="4" rx="1"/>
             <rect x="14" y="10" width="7" height="11" rx="1"/>
@@ -107,12 +143,6 @@
       </div>
       
       <div class="flex items-center gap-2">
-        <button
-          class="h-10 px-4 bg-[var(--accent)] text-white rounded-xl font-bold text-[11px] tracking-wide transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98] shadow-[0_2px_10px_rgba(76,132,245,0.3)] dark:shadow-[0_2px_10px_rgba(107,159,255,0.2)]"
-          onclick={() => document.dispatchEvent(new CustomEvent("open-export"))}
-        >
-          PREVIEW
-        </button>
         <button
           class="w-10 h-10 rounded-xl bg-[var(--input-bg)] flex items-center justify-center transition-all hover:bg-[var(--surface-hover)] active:scale-95"
           onclick={() => isMobileToolbarOpen = !isMobileToolbarOpen}
