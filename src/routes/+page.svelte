@@ -235,7 +235,7 @@
 </svelte:head>
 
 <main
-	class="relative min-h-screen flex flex-col items-center justify-center bg-black text-slate-50 overflow-hidden"
+	class="relative min-h-screen flex flex-col items-center justify-start bg-black text-slate-50 overflow-hidden"
 >
 	<!-- Layer 0: base grid -->
 	<canvas bind:this={baseCanvas} id="base"></canvas>
@@ -254,60 +254,29 @@
 		</Canvas>
 	</div>
 
-	<!-- Layer 3: hero text content — pointer-events-none so drags pass through to the canvas -->
+	<!-- Layer 3: hero text content -->
 	<div
-		class="relative z-30 w-full min-h-screen flex items-center justify-center lg:justify-start max-w-7xl mx-auto px-6 pointer-events-none"
+		class="relative z-30 w-full pt-20 flex flex-col items-center text-center px-6 pointer-events-none"
 	>
-		<div
-			class="flex flex-col items-center lg:items-start text-center lg:text-left pointer-events-none w-full"
-		>
-			{#if mounted}
-				<div
-					class="flex flex-col items-center lg:items-start max-w-2xl"
-					in:fly={{ y: 20, duration: 1000, delay: 600 }}
+		{#if mounted}
+			<div
+				class="flex flex-col items-center max-w-4xl"
+				in:fly={{ y: -20, duration: 1000, delay: 400 }}
+			>
+				<h1
+					class="font-jomolhari text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
 				>
-					<h1
-						class="font-prata text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
-					>
-						Design responsive bento grids visually
-					</h1>
-					<p
-						class="font-sans text-lg md:text-xl text-slate-400 mb-12 max-w-xl font-light leading-relaxed"
-					>
-						Build, customize, and preview layouts across desktop, tablet, and
-						mobile with the most intuitive grid builder.
-					</p>
-
-					<div
-						class="flex flex-wrap items-center justify-center lg:justify-start gap-6 pointer-events-auto"
-					>
-						<a
-							href="/playground"
-							class="group relative px-10 py-5 bg-white text-black font-bold rounded-2xl overflow-hidden shadow-[0_0_60px_rgba(255,255,255,0.15)] hover:shadow-[0_0_100px_rgba(255,255,255,0.3)] transition-all duration-700"
-						>
-							<span
-								class="relative z-10 font-bold tracking-tight text-lg font-sans"
-								>Launch Playground</span
-							>
-						</a>
-
-						<a
-							href="/templates"
-							class="group relative px-10 py-5 border border-white/20 text-white font-bold rounded-2xl overflow-hidden transition-all duration-500 hover:text-black"
-						>
-							<span
-								class="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-out"
-							></span>
-							<span
-								class="relative z-10 font-bold tracking-tight text-lg font-sans"
-								>Browse Templates</span
-							>
-						</a>
-					</div>
-				</div>
-			{/if}
-		</div>
+					Design responsive bento grids visually
+				</h1>
+				<p
+					class="font-arimo text-xl md:text-2xl text-slate-200 max-w-3xl font-light leading-relaxed mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent"
+				>
+					Create, customize, and export grid systems with zero friction.
+				</p>
+			</div>
+		{/if}
 	</div>
+
 </main>
 
 <style>

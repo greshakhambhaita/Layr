@@ -20,6 +20,8 @@ export default {
 			fontFamily: {
 				sans: ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 				prata: ['Prata', 'serif'],
+				jomolhari: ['Jomolhari', 'serif'],
+				arimo: ['Arimo', 'sans-serif'],
 				mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace']
 			},
 			boxShadow: {

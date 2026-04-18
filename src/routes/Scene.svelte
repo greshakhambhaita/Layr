@@ -168,8 +168,10 @@
     if (idleForRotation) {
       // Slow idle spin
       baseYaw += 0.002;
-      identityQuat.setFromEuler(new THREE.Euler(baseTilt.x, baseYaw, baseTilt.z));
-      
+      identityQuat.setFromEuler(
+        new THREE.Euler(baseTilt.x, baseYaw, baseTilt.z),
+      );
+
       // Slerp back to original orientation — faster return
       targetQuat.slerp(identityQuat, 0.045);
     }
@@ -196,9 +198,9 @@
   let coreCol = $state("#ffaa55");
 
   const startFill = new THREE.Color("#4488ff"); // Blue
-  const endFill = new THREE.Color("#ff44bb");   // Pink
+  const endFill = new THREE.Color("#ff44bb"); // Pink
   const startCore = new THREE.Color("#ffaa55"); // Orange
-  const endCore = new THREE.Color("#ffccaa");   // Peach
+  const endCore = new THREE.Color("#ffccaa"); // Peach
 
   useTask((delta) => {
     colorCycleTime += delta * 0.5; // slow speed
@@ -259,8 +261,8 @@
   });
 
   // ─── Responsive Positioning ─────────────────────────────────────────────
-  let groupX = $derived($size.width < 768 ? 0 : 1.4);
-  let groupY = $derived($size.width < 768 ? -0.8 : 0.2);
+  let groupX = $derived(0);
+  let groupY = $derived(0);
   let groupScale = $derived($size.width < 768 ? 0.75 : 1.0);
 
   useTask(() => {
@@ -314,8 +316,13 @@
 
 <T.AmbientLight intensity={0.4} />
 <T.DirectionalLight position={[4, 6, 3]} intensity={1.8} color="#ffffff" />
-<T.DirectionalLight position={[-3, 2, -4]} intensity={2.5} color={fillCol} /> 
-<T.PointLight position={[0, 0, 0]} intensity={25} distance={10} color={coreCol} />
+<T.DirectionalLight position={[-3, 2, -4]} intensity={2.5} color={fillCol} />
+<T.PointLight
+  position={[0, 0, 0]}
+  intensity={25}
+  distance={10}
+  color={coreCol}
+/>
 
 <!-- Main anchor group — floats as a whole, quaternion rotatable to any angle -->
 <T.Group

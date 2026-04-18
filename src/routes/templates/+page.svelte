@@ -3,21 +3,24 @@
 	import Logo from "$lib/assets/p.svg";
 	import { onMount } from "svelte";
 	import { fade, fly } from "svelte/transition";
-	
+
 	function reveal(node) {
-		const observer = new IntersectionObserver((entries) => {
-			entries.forEach(entry => {
-				if (entry.isIntersecting) {
-					node.classList.add('is-visible');
-				}
-			});
-		}, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-		
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((entry) => {
+					if (entry.isIntersecting) {
+						node.classList.add("is-visible");
+					}
+				});
+			},
+			{ threshold: 0.1, rootMargin: "0px 0px -50px 0px" },
+		);
+
 		observer.observe(node);
 		return {
 			destroy() {
 				observer.unobserve(node);
-			}
+			},
 		};
 	}
 
@@ -94,20 +97,6 @@
 					c: 4,
 					colSpan: 8,
 					rowSpan: 4,
-					textElements: [
-						{
-							text: "VISUALS",
-							x: 50,
-							y: 50,
-							fontSize: 32,
-							fontWeight: 700,
-							fontFamily: "Outfit",
-							color: "#000000",
-							opacity: 0.1,
-							rotation: 0,
-							scale: 1,
-						},
-					],
 				},
 				{ id: "c", r: 4, c: 4, colSpan: 4, rowSpan: 4 },
 				{ id: "d", r: 4, c: 8, colSpan: 4, rowSpan: 4 },
@@ -665,7 +654,8 @@
 </svelte:head>
 
 <main
-	class="min-h-screen w-full bg-black text-white font-sans overflow-x-hidden relative"
+	class="min-h-screen w-full bg-black text-white font-sans relative"
+	style="overflow-x: clip"
 >
 	<!-- Ambient Grid Canvas -->
 	<canvas bind:this={baseCanvas} id="base"></canvas>
@@ -675,21 +665,19 @@
 		<div class="relative z-10">
 			<!-- Header -->
 			<header
-				class="fixed top-0 left-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/10 py-4 px-6 md:py-6 md:px-12"
+				class="fixed top-0 left-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/20 py-4 px-6 md:py-6 md:px-12"
 			>
 				<div class="w-full flex justify-between items-center">
 					<a
 						href="/"
-						class="group flex items-center bg-white/5 backdrop-blur-md transition-all duration-500 hover:bg-white/10 border-none rounded-none"
+						class="group flex items-center transition-all duration-500"
 						in:fade={{ delay: 200 }}
 					>
-						<div class="px-3 py-2 flex items-center justify-center">
-							<img
-								src={Logo}
-								alt="Project Logo"
-								class="h-7 md:h-8 w-auto opacity-40 contrast-[1.1] invert brightness-[1.15] group-hover:opacity-100 transition-all duration-500"
-							/>
-						</div>
+						<img
+							src={Logo}
+							alt="Project Logo"
+							class="h-7 md:h-8 w-auto opacity-25 invert group-hover:opacity-100 transition-opacity duration-500"
+						/>
 					</a>
 					<div
 						class="flex flex-col gap-0.5 text-right items-end"
@@ -709,14 +697,14 @@
 
 			<!-- Table Grid -->
 			<div
-				class="pt-[80px] md:pt-[100px] w-full grid grid-cols-1 md:grid-cols-2 border-t border-white/10"
+				class="pt-[80px] md:pt-[100px] w-full grid grid-cols-1 md:grid-cols-2 border-t border-white/20"
 			>
 				{#each allTemplates as template, i}
 					<div
 						use:reveal
-						class="template-card border-b border-white/10 {i % 2 === 0
+						class="template-card border-b border-white/20 {i % 2 === 0
 							? 'md:border-r'
-							: ''} p-8 md:p-16 flex flex-col gap-12 group transition-colors hover:bg-white/[0.02]"
+							: ''} p-6 md:p-10 flex flex-col gap-8 group transition-colors hover:bg-white/[0.02]"
 					>
 						<!-- Header Info -->
 						<div class="flex justify-between items-start">
@@ -736,7 +724,7 @@
 							</div>
 							<button
 								onclick={() => handleSelectTemplate(template)}
-								class="select-btn px-6 py-2.5 border-2 border-white/10 text-white/40 text-[11px] font-bold rounded uppercase tracking-widest transition-all whitespace-nowrap"
+								class="select-btn px-6 py-2.5 border-2 border-white/20 text-white/40 text-[11px] font-bold rounded uppercase tracking-widest transition-all whitespace-nowrap"
 							>
 								Select
 							</button>
@@ -744,7 +732,7 @@
 
 						<!-- Visual Preview Area -->
 						<div
-							class="flex-1 w-full flex items-center justify-center min-h-[400px] pointer-events-none"
+							class="flex-1 w-full flex items-center justify-center pointer-events-none"
 						>
 							<div
 								class="bento-grid-wrapper w-full flex items-center justify-center scale-90 md:scale-[0.75]"
@@ -916,47 +904,11 @@
 		transform: translateY(0) scale(1);
 	}
 
-	.select-btn {
-		position: relative;
-	}
-
-	.select-btn::before {
-		content: '';
-		position: absolute;
-		inset: -2px;
-		border: 2px solid rgba(255, 255, 255, 0.4);
-		border-radius: inherit;
-		opacity: 0;
-		clip-path: polygon(0 0, 0 0, 0 0, 0 0, 0 0);
-		pointer-events: none;
-	}
-
 	.select-btn:hover {
 		color: #fff;
-		border-color: rgba(255, 255, 255, 0.1);
-		transition-duration: 0.8s;
-	}
-
-	.select-btn:hover::before {
-		opacity: 1;
-		animation: border-draw-reveal 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-	}
-
-	@keyframes border-draw-reveal {
-		0% {
-			clip-path: polygon(0 0, 0 0, 0 0, 0 0, 0 0);
-		}
-		25% {
-			clip-path: polygon(0 0, 100% 0, 100% 0, 100% 0, 100% 0);
-		}
-		50% {
-			clip-path: polygon(0 0, 100% 0, 100% 100%, 100% 100%, 100% 100%);
-		}
-		75% {
-			clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 100%);
-		}
-		100% {
-			clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0);
-		}
+		border-color: rgba(255, 255, 255, 0.3);
+		transition:
+			color 0.3s,
+			border-color 0.3s;
 	}
 </style>
