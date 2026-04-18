@@ -256,7 +256,7 @@
 
 	<!-- Layer 3: hero text content -->
 	<div
-		class="relative z-30 w-full pt-20 flex flex-col items-center text-center px-6 pointer-events-none"
+		class="relative z-[100] w-full pt-20 flex flex-col items-center text-center px-3 pointer-events-none"
 	>
 		{#if mounted}
 			<div
@@ -276,7 +276,6 @@
 			</div>
 		{/if}
 	</div>
-
 </main>
 
 <style>

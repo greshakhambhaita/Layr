@@ -262,7 +262,7 @@
 
   // ─── Responsive Positioning ─────────────────────────────────────────────
   let groupX = $derived(0);
-  let groupY = $derived(0);
+  let groupY = $derived(-0.29);
   let groupScale = $derived($size.width < 768 ? 0.75 : 1.0);
 
   useTask(() => {
