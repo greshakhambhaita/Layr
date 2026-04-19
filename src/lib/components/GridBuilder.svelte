@@ -43,17 +43,24 @@
   <div
     class="fixed top-6 left-0 right-0 z-50 flex items-center px-8 pointer-events-none"
   >
-    <!-- LAYR wordmark — left on lg, hidden on mobile (shown inside centered group) -->
-    <a
-      href="/"
-      class="hidden lg:flex pointer-events-auto group items-center transition-all duration-500"
-    >
-      <img
-        src={Logo}
-        alt="Layr"
-        class="h-[30px] w-auto opacity-25 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300 dark:invert"
-      />
-    </a>
+    <div class="hidden lg:flex items-center gap-6 pointer-events-auto">
+      <a
+        href="/"
+        class="group flex items-center transition-all duration-500"
+      >
+        <img
+          src={Logo}
+          alt="Layr"
+          class="h-[28px] w-auto opacity-25 group-hover:opacity-100 group-active:opacity-100 transition-opacity duration-300 dark:invert"
+        />
+      </a>
+      <div class="h-4 w-[1px] bg-[var(--border-subtle)]"></div>
+      <div class="flex items-center gap-4">
+        <a href="/templates" class="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-white transition-colors">Templates</a>
+
+        <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] text-white/20 uppercase tracking-widest font-mono">v1.2</span>
+      </div>
+    </div>
 
     <!-- Device selector: absolutely centered on lg; inline centered group on mobile -->
     <div

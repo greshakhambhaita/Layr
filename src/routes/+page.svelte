@@ -1,4 +1,5 @@
 <script>
+	import Logo from "$lib/assets/p.svg";
 	import { Canvas } from "@threlte/core";
 	import { onMount } from "svelte";
 	import { fly } from "svelte/transition";
@@ -235,83 +236,209 @@
 </svelte:head>
 
 <main
-	class="relative min-h-screen flex flex-col items-center justify-start bg-black text-slate-50 overflow-hidden"
+	class="relative min-h-screen flex flex-col items-center justify-start bg-black text-white overflow-hidden"
 >
-	<!-- Fixed background layers (grid + glow) -->
-	<canvas bind:this={baseCanvas} id="base"></canvas>
-	<canvas bind:this={fxCanvas} id="fx"></canvas>
+	<!-- Hero Section Section -->
+	<div class="relative w-full h-screen">
+		<!-- Background layers (grid + glow) -->
+		<canvas bind:this={baseCanvas} id="base" class="absolute inset-0"></canvas>
+		<canvas bind:this={fxCanvas} id="fx" class="absolute inset-0"></canvas>
 
-	<!-- Fixed Threlte scene (cube travels via scroll in Scene.svelte) -->
-	<div class="threlte-wrapper">
-		<Canvas
-			alpha={true}
-			toneMapping={THREE.ACESFilmicToneMapping}
-			toneMappingExposure={1.5}
+		<!-- Threlte scene (cube travels via scroll in Scene.svelte) -->
+		<div
+			class="threlte-wrapper absolute inset-0 h-screen z-10 pointer-events-auto"
 		>
-			<Scene />
-		</Canvas>
-	</div>
+			<Canvas
+				alpha={true}
+				toneMapping={THREE.ACESFilmicToneMapping}
+				toneMappingExposure={1.5}
+			>
+				<Scene />
+			</Canvas>
+		</div>
 
-	<!-- Hero text content -->
-	<div
-		class="relative z-[100] w-full pt-20 flex flex-col items-center text-center px-3 pointer-events-none"
-	>
+		<!-- Hero text content -->
+		<div
+			class="relative z-[100] w-full pt-20 flex flex-col items-center text-center px-3 pointer-events-none"
+		>
+			{#if mounted}
+				<div
+					class="flex flex-col items-center max-w-4xl"
+					in:fly={{ y: -20, duration: 1000, delay: 400 }}
+				>
+					<h1
+						class="font-jomolhari text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
+					>
+						Design responsive bento grids visually
+					</h1>
+					<p
+						class="font-arimo text-xl md:text-2xl max-w-3xl font-light leading-relaxed mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent"
+					>
+						Create, customize, and export grid systems with zero friction.
+					</p>
+				</div>
+			{/if}
+		</div>
+
+		<!-- CTA Buttons -->
 		{#if mounted}
 			<div
-				class="flex flex-col items-center max-w-4xl"
-				in:fly={{ y: -20, duration: 1000, delay: 400 }}
+				class="absolute bottom-8 lg:bottom-12 left-1/2 -translate-x-1/2 z-[110] flex flex-col md:flex-row items-center gap-4 md:gap-8 pointer-events-none w-[calc(100%-48px)] md:w-auto"
+				in:fly={{ y: 30, duration: 1200, delay: 1000 }}
 			>
-				<h1
-					class="font-jomolhari text-5xl md:text-7xl lg:text-8xl mb-6 leading-tight tracking-tight drop-shadow-2xl"
+				<a
+					href="/templates"
+					class="group relative w-full md:w-auto px-10 py-4 overflow-hidden rounded-full bg-white text-black font-arimo text-[10px] md:text-xs uppercase tracking-[0.25em] transition-all hover:bg-neutral-200 active:scale-95 pointer-events-auto text-center"
 				>
-					Design responsive bento grids visually
-				</h1>
-				<p
-					class="font-arimo text-xl md:text-2xl text-slate-200 max-w-3xl font-light leading-relaxed mb-4 drop-shadow-[0_0_15px_rgba(255,255,255,0.15)] bg-gradient-to-b from-white to-slate-400 bg-clip-text text-transparent"
-				>
-					Create, customize, and export grid systems with zero friction.
-				</p>
+					<span class="relative z-10">Browse Templates</span>
+				</a>
 
+				<a
+					href="/playground"
+					class="group relative w-full md:w-auto px-10 py-4 overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-md font-arimo text-[10px] md:text-xs uppercase tracking-[0.25em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 pointer-events-auto text-center"
+				>
+					<div
+						class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+					></div>
+					<span class="relative z-10 text-white">Launch Playground</span>
+
+					<!-- Subtle glow effect -->
+					<div
+						class="absolute -inset-px rounded-full bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity"
+					></div>
+				</a>
 			</div>
 		{/if}
 	</div>
 
-	<!-- CTA Buttons - Fixed at bottom for prominent entry over the cube -->
-	{#if mounted}
+	<!-- Secondary Content Section (Below the fold) -->
+	<div
+		class="relative z-[10] w-full pt-24 pb-24 px-12 md:px-24 flex flex-col items-center"
+	>
 		<div
-			class="fixed bottom-12 left-1/2 -translate-x-1/2 z-[110] flex flex-row items-center gap-8 pointer-events-none"
-			in:fly={{ y: 30, duration: 1200, delay: 1000 }}
+			class="w-full max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-12 text-center md:text-left"
 		>
-			<a
-				href="/templates"
-				class="group relative px-10 py-4 overflow-hidden rounded-full bg-white text-black font-arimo text-xs uppercase tracking-[0.25em] transition-all hover:bg-neutral-200 active:scale-95 pointer-events-auto"
-			>
-				<span class="relative z-10">Browse Templates</span>
-			</a>
-
-			<a
-				href="/playground"
-				class="group relative px-10 py-4 overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-md font-arimo text-xs uppercase tracking-[0.25em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 pointer-events-auto"
-			>
-				<div
-					class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-				></div>
-				<span class="relative z-10 text-white">Launch Playground</span>
-
-				<!-- Subtle glow effect -->
-				<div
-					class="absolute -inset-px rounded-full bg-gradient-to-r from-blue-500/0 via-white/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity"
-				></div>
-			</a>
+			<div class="flex flex-col gap-4 border-l border-white/5 pl-6">
+				<span
+					class="text-[9px] uppercase tracking-[0.4em] text-white/60 font-bold"
+					>Protocol 01</span
+				>
+				<h4 class="text-xl font-jomolhari">Fully Responsive</h4>
+				<p
+					class="text-[10px] text-white/30 leading-relaxed font-light tracking-wide uppercase"
+				>
+					Multi-breakpoint support for Desktop, Tablet, and Mobile devices.
+				</p>
+			</div>
+			<div class="flex flex-col gap-4 border-l border-white/5 pl-6">
+				<span
+					class="text-[9px] uppercase tracking-[0.4em] text-white/60 font-bold"
+					>Protocol 02</span
+				>
+				<h4 class="text-xl font-jomolhari">Live Editing</h4>
+				<p
+					class="text-[10px] text-white/30 leading-relaxed font-light tracking-wide uppercase"
+				>
+					Real-time preview with high-performance CSS grid engine.
+				</p>
+			</div>
+			<div class="flex flex-col gap-4 border-l border-white/5 pl-6">
+				<span
+					class="text-[9px] uppercase tracking-[0.4em] text-white/60 font-bold"
+					>Protocol 03</span
+				>
+				<h4 class="text-xl font-jomolhari">Code Export</h4>
+				<p
+					class="text-[10px] text-white/30 leading-relaxed font-light tracking-wide uppercase"
+				>
+					Production-ready Svelte and React component generation.
+				</p>
+			</div>
+			<div class="flex flex-col gap-4 border-l border-white/5 pl-6">
+				<span
+					class="text-[9px] uppercase tracking-[0.4em] text-white/60 font-bold"
+					>Protocol 04</span
+				>
+				<h4 class="text-xl font-jomolhari">High Density</h4>
+				<p
+					class="text-[10px] text-white/30 leading-relaxed font-light tracking-wide uppercase"
+				>
+					Efficient layout management for complex content matrices.
+				</p>
+			</div>
 		</div>
-	{/if}
+
+		<!-- Footer -->
+		<footer
+			class="w-full mt-48 border-t-2 border-white/20 pt-16 pb-20 flex flex-col md:flex-row justify-between items-start gap-20"
+		>
+			<div class="flex flex-col gap-8">
+				<div class="flex items-center gap-5 opacity-100">
+					<img src={Logo} alt="" class="h-8 invert" />
+					<div class="h-6 w-[1px] bg-white/40"></div>
+					<span
+						class="text-base font-jomolhari uppercase tracking-[0.5em] font-black"
+						>Bento Grid Engine</span
+					>
+				</div>
+				<p
+					class="text-base text-white/60 font-light max-w-sm leading-relaxed uppercase tracking-[0.2em]"
+				>
+					Designed for modern designers and engineers building the future of the
+					web.
+				</p>
+			</div>
+			<div class="flex gap-24 text-white/50">
+				<div class="flex flex-col gap-6">
+					<span
+						class="text-xs uppercase tracking-[0.4em] font-black text-white/90"
+						>Engine</span
+					>
+					<div class="flex flex-col gap-4">
+						<a
+							href="/templates"
+							class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+							>Core Patterns</a
+						>
+						<a
+							href="/playground"
+							class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+							>Interactive Editor</a
+						>
+					</div>
+				</div>
+				<div class="flex flex-col gap-6">
+					<span
+						class="text-xs uppercase tracking-[0.4em] font-black text-white/90"
+						>Project</span
+					>
+					<div class="flex flex-col gap-4">
+						<a
+							href="/"
+							class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+							>GitHub Repository</a
+						>
+					</div>
+				</div>
+			</div>
+		</footer>
+	</div>
 </main>
 
 <style>
 	:global(body) {
 		background-color: #000;
 		margin: 0;
-		overflow: hidden;
+		overflow-x: hidden;
+		overflow-y: auto;
+	}
+
+	:global(body)::-webkit-scrollbar {
+		width: 4px;
+	}
+	:global(body)::-webkit-scrollbar-thumb {
+		background: rgba(255, 255, 255, 0.1);
+		border-radius: 10px;
 	}
 
 	canvas {
@@ -329,8 +456,9 @@
 	}
 
 	.threlte-wrapper {
-		position: fixed;
+		position: absolute;
 		inset: 0;
+		height: 100vh;
 		z-index: 2;
 		pointer-events: auto;
 	}

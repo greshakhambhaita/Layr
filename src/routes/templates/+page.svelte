@@ -27,6 +27,9 @@
 	let mounted = $state(false);
 	let baseCanvas, fxCanvas;
 
+	let activeCategory = $state("All");
+	let isFilterMenuOpen = $state(false);
+
 	const templates = [
 		{
 			name: "Modern Bento Portfolio",
@@ -481,22 +484,34 @@
 		},
 	];
 
-	// Process all templates for the list view
+	// Process and filter templates for the list view
 	const allTemplates = $derived(
-		templates.map((t) => ({
-			...t,
-			processedCells: t.cells.map((cell) => ({
-				hex: "#d9d9d9",
-				opacity: 1,
-				type: "color",
-				imageUrl: "",
-				imageStyle: { fit: "cover", position: "center", scale: 1 },
-				clipPath: "",
-				textElements: [],
-				...cell,
-				gridArea: `${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}`,
-			})),
-		})),
+		templates
+			.map((t, i) => {
+				// Assign dynamic categories for filtering demonstration
+				const categories = ["Portfolio", "Minimal", "Editorial"];
+				const category = t.category || categories[i % categories.length];
+				return {
+					...t,
+					category,
+					processedCells: t.cells.map((cell) => ({
+						hex: "#d9d9d9",
+						opacity: 1,
+						type: "color",
+						imageUrl: "",
+						imageStyle: { fit: "cover", position: "center", scale: 1 },
+						clipPath: "",
+						textElements: [],
+						...cell,
+						gridArea: `${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}`,
+					})),
+				};
+			})
+			.filter((t) => {
+				const matchesCategory =
+					activeCategory === "All" || t.category === activeCategory;
+				return matchesCategory;
+			}),
 	);
 
 	const handleSelectTemplate = (template) => {
@@ -672,21 +687,7 @@
 
 			fCtx.clearRect(0, 0, W, H);
 
-			const hcX = Math.floor(mouse.x / CELL);
-			const hcY = Math.floor(mouse.y / CELL);
-			const span = Math.ceil(GLOW_RADIUS / CELL) + 1;
-
-			for (let c = hcX - span; c <= hcX + span; c++) {
-				for (let r = hcY - span; r <= hcY + span; r++) {
-					if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
-					const x = c * CELL;
-					const y = r * CELL;
-					drawSegmentSoft(x, y, x + CELL, y);
-					drawSegmentSoft(x, y + CELL, x + CELL, y + CELL);
-					drawSegmentSoft(x, y, x, y + CELL);
-					drawSegmentSoft(x + CELL, y, x + CELL, y + CELL);
-				}
-			}
+			// Interactive hover glow disabled for utility aesthetic
 
 			if (ripple) {
 				for (let c = 0; c < cols; c++) {
@@ -770,22 +771,25 @@
 				class="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b-2 border-white/20 py-3 px-6 md:py-4 md:px-12"
 			>
 				<div class="w-full flex justify-between items-center">
-					<a
-						href="/"
-						class="group flex items-center transition-all duration-500"
-						in:fade={{ delay: 200 }}
-					>
-						<img
-							src={Logo}
-							alt="Project Logo"
-							class="h-7 md:h-8 w-auto opacity-25 invert group-hover:opacity-100 transition-opacity duration-500"
-						/>
-					</a>
+					<div class="flex items-center gap-8">
+						<a
+							href="/"
+							class="group flex items-center transition-all duration-500"
+							in:fade={{ delay: 200 }}
+						>
+							<img
+								src={Logo}
+								alt="Project Logo"
+								class="h-7 md:h-8 w-auto opacity-25 invert group-hover:opacity-100 transition-opacity duration-500"
+							/>
+						</a>
+					</div>
+
 					<div
 						class="flex flex-col gap-0.5 text-right items-end"
 						in:fly={{ y: -10, duration: 800 }}
 					>
-						<h1 class="text-xl md:text-2xl font-prata tracking-tight">
+						<h1 class="text-xl md:text-2xl font-jomolhari tracking-tight">
 							Explore Templates
 						</h1>
 						<p
@@ -797,95 +801,164 @@
 				</div>
 			</header>
 
-			<!-- Table Grid -->
-			<div
-				class="pt-[70px] md:pt-[80px] w-full grid grid-cols-1 md:grid-cols-2 border-t-2 border-white/20"
-			>
-				{#each allTemplates as template, i}
-					<div
-						use:reveal
-						class="template-card border-b-2 border-white/20 {i % 2 === 0
-							? 'md:border-r-2'
-							: ''} p-6 md:p-8 flex flex-col gap-6 group transition-colors hover:bg-white/[0.02]"
-					>
-						<!-- Header Info -->
-						<div class="flex justify-between items-start">
-							<div class="flex flex-col gap-2">
-								<span
-									class="text-white/50 text-[10px] uppercase tracking-[0.2em]"
-									>P-{String(i + 1).padStart(2, "0")}</span
-								>
-								<h3
-									class="text-white font-sans text-2xl font-medium tracking-tight group-hover:text-white transition-colors"
-								>
-									{template.name}
-								</h3>
-								<p class="text-white/60 text-sm font-sans tracking-tight">
-									{template.description}
-								</p>
+			<!-- Table Grid Area -->
+			<div class="pt-[70px] md:pt-[76px] w-full">
+				<!-- Utility Bar -->
+				<div
+					class="sticky top-[70px] md:top-[76px] z-40 w-full px-6 md:px-12 py-4 md:py-6 bg-black/80 backdrop-blur-md border-b border-white/5 transition-all duration-300"
+				>
+					<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+						<!-- Mobile Filter Header -->
+						<div class="flex items-center justify-between w-full lg:w-auto">
+							<div class="flex items-center gap-4">
+								<span class="text-xs text-white/40 uppercase tracking-[0.4em] font-black italic whitespace-nowrap">Engine Filter</span>
+								<div class="px-2 py-0.5 rounded-full bg-white/10 text-[9px] text-white/60 font-mono lg:hidden">
+									{activeCategory}
+								</div>
 							</div>
-							<button
-								onclick={() => handleSelectTemplate(template)}
-								class="group relative px-6 py-2.5 overflow-hidden rounded-full border border-white/10 bg-white/5 font-arimo text-[10px] uppercase tracking-[0.2em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 whitespace-nowrap"
+							
+							<button 
+								onclick={() => isFilterMenuOpen = !isFilterMenuOpen}
+								class="lg:hidden p-2 -mr-2 text-white/60 hover:text-white transition-colors"
+								aria-label="Toggle filters"
 							>
-								<div
-									class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
-								></div>
-								<span class="relative z-10 text-white/60 group-hover:text-white"
-									>Select</span
-								>
-
-								<!-- Subtle glow effect -->
-								<div
-									class="absolute -inset-px rounded-full bg-gradient-to-r from-blue-500/0 via-white/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity"
-								></div>
+								{#if isFilterMenuOpen}
+									<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									</svg>
+								{:else}
+									<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+									</svg>
+								{/if}
 							</button>
 						</div>
 
-						<!-- Visual Preview Area -->
-						<div
-							class="flex-1 w-full flex items-center justify-center pointer-events-none"
+						<!-- Filter Options -->
+						<div 
+							class="{isFilterMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 w-full lg:w-auto overflow-hidden transition-all duration-500"
+							in:fade={{ duration: 200 }}
 						>
+							{#each ["All", "Portfolio", "Minimal", "Editorial"] as category}
+								<button
+									onclick={() => {
+										activeCategory = category;
+										isFilterMenuOpen = false;
+									}}
+									class="px-6 py-2.5 rounded-full border-2 transition-all uppercase tracking-[0.25em] text-[11px] font-black text-center {activeCategory === category
+										? 'border-white bg-white text-black'
+										: 'border-white/10 text-white/40 hover:border-white/40 hover:text-white'}"
+								>
+									{category}
+								</button>
+							{/each}
+						</div>
+					</div>
+				</div>
+
+
+				<div class="w-full grid grid-cols-1 md:grid-cols-2">
+					{#each allTemplates as template, i}
+						<div
+							use:reveal
+							class="template-card border-b-2 border-white/20 {i % 2 === 0
+								? 'md:border-r-2'
+								: ''} p-6 md:p-8 flex flex-col gap-6 group transition-colors hover:bg-white/[0.02]"
+						>
+							<!-- Header Info -->
+							<div class="flex justify-between items-start">
+								<div class="flex flex-col gap-2">
+									<div class="flex items-center gap-4">
+										<span
+											class="text-white/50 text-[10px] uppercase tracking-[0.2em]"
+											>P-{String(i + 1).padStart(2, "0")}</span
+										>
+										<div class="h-[1px] w-4 bg-white/10"></div>
+										<div class="flex gap-1.5">
+											<span
+												class="px-2 py-0.5 rounded-sm border border-white/10 bg-white/[0.03] text-[9px] text-white/30 font-mono tracking-tighter"
+											>
+												{template.internalCols}×{template.internalRows}
+											</span>
+											<span
+												class="px-2 py-0.5 rounded-sm border border-white/10 bg-white/[0.03] text-[9px] text-white/30 font-mono tracking-tighter"
+											>
+												{template.gridGap}PX GAP
+											</span>
+										</div>
+									</div>
+									<h3
+										class="text-white font-sans text-2xl font-medium tracking-tight group-hover:text-white transition-colors"
+									>
+										{template.name}
+									</h3>
+									<p class="text-white/60 text-sm font-sans tracking-tight">
+										{template.description}
+									</p>
+								</div>
+								<button
+									onclick={() => handleSelectTemplate(template)}
+									class="group relative px-6 py-2.5 overflow-hidden rounded-full border border-white/10 bg-white/5 font-arimo text-[10px] uppercase tracking-[0.2em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 whitespace-nowrap"
+								>
+									<div
+										class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+									></div>
+									<span
+										class="relative z-10 text-white/60 group-hover:text-white"
+										>Select</span
+									>
+
+									<!-- Subtle glow effect -->
+									<div
+										class="absolute -inset-px rounded-full bg-gradient-to-r from-blue-500/0 via-white/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity"
+									></div>
+								</button>
+							</div>
+
+							<!-- Visual Preview Area -->
 							<div
-								class="bento-grid-wrapper w-full flex items-center justify-center scale-90 md:scale-[0.8]"
+								class="flex-1 w-full flex items-center justify-center pointer-events-none"
 							>
 								<div
-									class="bento-grid relative z-10 w-full"
-									style="
+									class="bento-grid-wrapper w-full flex items-center justify-center scale-90 md:scale-[0.8]"
+								>
+									<div
+										class="bento-grid relative z-10 w-full"
+										style="
 									--grid-cols: {template.internalCols};
 									--grid-rows: {template.internalRows};
 									--grid-gap: {template.gridGap}px;
 									--grid-radius: {template.cellRadius}px;
 									--grid-aspect: {template.aspectRatio};
 								"
-								>
-									{#each template.processedCells as cell (cell.id)}
-										<div
-											class="bento-cell bento-cell-{cell.id}"
-											style="
+									>
+										{#each template.processedCells as cell (cell.id)}
+											<div
+												class="bento-cell bento-cell-{cell.id}"
+												style="
 											grid-area: {cell.gridArea};
 											--cell-bg: {cell.hex};
 											--cell-opacity: {cell.opacity};
 											{cell.clipPath ? `clip-path: ${cell.clipPath};` : ''}
 										"
-										>
-											{#if cell.type === "image" && cell.imageUrl}
-												<img
-													src={cell.imageUrl}
-													alt=""
-													style="
+											>
+												{#if cell.type === "image" && cell.imageUrl}
+													<img
+														src={cell.imageUrl}
+														alt=""
+														style="
 													object-fit: {cell.imageStyle.fit};
 													object-position: {cell.imageStyle.position};
 													transform: scale({cell.imageStyle.scale});
 												"
-												/>
-											{/if}
+													/>
+												{/if}
 
-											{#if cell.textElements?.length > 0}
-												<div class="bento-text-layer">
-													{#each cell.textElements as text}
-														<div
-															style="
+												{#if cell.textElements?.length > 0}
+													<div class="bento-text-layer">
+														{#each cell.textElements as text}
+															<div
+																style="
 															position: absolute;
 															left: {text.x}%;
 															top: {text.y}%;
@@ -898,34 +971,96 @@
 															text-align: {text.textAlign};
 															white-space: nowrap;
 														"
-														>
-															{text.text}
-														</div>
-													{/each}
-												</div>
-											{/if}
-										</div>
+															>
+																{text.text}
+															</div>
+														{/each}
+													</div>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								</div>
+							</div>
+
+							<!-- Footer Metadata -->
+							<div
+								class="mt-auto flex justify-between items-center pt-6 border-t border-white/[0.05] opacity-40 group-hover:opacity-80 transition-opacity duration-500"
+							>
+								<span
+									class="text-white/70 text-[12px] uppercase tracking-widest"
+									>{template.numCols * 2} Resolution Columns</span
+								>
+								<div class="flex gap-2">
+									{#each [1, 2, 3] as _}
+										<div class="w-1 h-1 rounded-full bg-white/70"></div>
 									{/each}
 								</div>
 							</div>
 						</div>
+					{/each}
+				</div>
+			</div>
 
-						<!-- Footer Metadata -->
-						<div
-							class="mt-auto flex justify-between items-center pt-6 border-t border-white/[0.05] opacity-40 group-hover:opacity-80 transition-opacity duration-500"
+			<!-- Technical Footer -->
+			<footer
+				class="w-full border-t-2 border-white/20 bg-white/[0.02] px-6 md:px-12 py-20 flex flex-col md:flex-row justify-between items-start gap-16"
+			>
+				<div class="flex flex-col gap-8">
+					<div class="flex items-center gap-5 opacity-100">
+						<img src={Logo} alt="" class="h-6 invert" />
+						<div class="h-4 w-[1px] bg-white/40"></div>
+						<span class="text-sm uppercase tracking-[0.4em] font-black italic"
+							>Bento Grid Engine v1.2</span
 						>
-							<span class="text-white/70 text-[12px] uppercase tracking-widest"
-								>{template.numCols * 2} Resolution Columns</span
+					</div>
+					<p
+						class="text-sm text-white/50 font-light max-w-sm leading-relaxed uppercase tracking-[0.2em]"
+					>
+						An open-source utility for designing high-density responsive grid
+						systems visually.
+					</p>
+				</div>
+				<div class="flex gap-20 text-white/40">
+					<div class="flex flex-col gap-6">
+						<span
+							class="text-xs uppercase tracking-[0.3em] font-black text-white/80"
+							>Documentation</span
+						>
+						<div class="flex flex-col gap-3">
+
+							<a
+								href="/templates"
+								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+								>Patterns</a
 							>
-							<div class="flex gap-2">
-								{#each [1, 2, 3] as _}
-									<div class="w-1 h-1 rounded-full bg-white/70"></div>
-								{/each}
-							</div>
 						</div>
 					</div>
-				{/each}
-			</div>
+					<div class="flex flex-col gap-6">
+						<span
+							class="text-xs uppercase tracking-[0.3em] font-black text-white/80"
+							>Community</span
+						>
+						<div class="flex flex-col gap-3">
+							<a
+								href="/"
+								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+								>GitHub</a
+							>
+							<a
+								href="/"
+								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+								>Discord</a
+							>
+							<a
+								href="/"
+								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+								>Twitter</a
+							>
+						</div>
+					</div>
+				</div>
+			</footer>
 		</div>
 	{/if}
 </main>
@@ -964,7 +1099,28 @@
 		background: rgba(0, 0, 0, 0.4);
 		backdrop-filter: blur(4px);
 		border-radius: 20px;
+		position: relative;
+		overflow: hidden;
 	}
+
+	.bento-grid::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+		background-image: linear-gradient(
+				to right,
+				rgba(255, 255, 255, 0.08) 1px,
+				transparent 1px
+			),
+			linear-gradient(to bottom, rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+		background-size: calc(100% / var(--grid-cols)) calc(100% / var(--grid-rows));
+		background-position: 0.5px 0.5px;
+		opacity: 0;
+		z-index: 1;
+	}
+
+	/* Removed hover grid effect */
 
 	canvas {
 		position: fixed;
