@@ -24,6 +24,30 @@ export function serializeGrid(store: BentoStore) {
     return serializedCell;
   });
 
+  // Calculate responsive layouts
+  const originalBreakpoint = store.currentBreakpoint;
+  
+  store.setBreakpoint('tablet');
+  const tabletLayout = store.getResponsiveLayout().map(c => ({
+    id: c.id,
+    r: c.previewR,
+    c: c.previewC,
+    rowSpan: c.previewRowSpan,
+    colSpan: c.previewColSpan
+  }));
+
+  store.setBreakpoint('mobile');
+  const mobileLayout = store.getResponsiveLayout().map(c => ({
+    id: c.id,
+    r: c.previewR,
+    c: c.previewC,
+    rowSpan: c.previewRowSpan,
+    colSpan: c.previewColSpan
+  }));
+
+  // Restore original breakpoint
+  store.setBreakpoint(originalBreakpoint);
+
   return {
     nickname: "", // To be filled by server
     createdAt: new Date().toISOString(),
@@ -33,8 +57,19 @@ export function serializeGrid(store: BentoStore) {
       gap: store.gridGap,
       cellRadius: store.cellRadius,
       width: store.gridWidth,
-      height: (store.grid as any).gridHeight || 600
+      height: store.gridHeight || 600
+    },
+    responsive: {
+      tablet: {
+        cols: 2,
+        cells: tabletLayout
+      },
+      mobile: {
+        cols: 1,
+        cells: mobileLayout
+      }
     },
     cells
   };
 }
+

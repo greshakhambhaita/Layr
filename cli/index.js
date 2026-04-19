@@ -87,53 +87,101 @@ program.command('add')
   });
 
 function generateSvelteComponent(config) {
-  const { grid, cells } = config;
-
-  const cols = grid.cols || 6;
-  const rows = grid.rows || 6;
-  const width = grid.width || 600;
+  const { grid, cells, responsive } = config;
   const gap = grid.gap || 12;
   const cellRadius = grid.cellRadius || 8;
+  
+  // Desktop configuration
+  const desktopCols = grid.cols || 6;
+  
+  // Define cell specific styles for different breakpoints
+  const desktopCellStyles = cells.map(cell => {
+    return `  .cell-${cell.id} { grid-area: ${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}; }`;
+  }).join('\n');
 
-  // Calculate height using Layr's internal formula if not provided
-  const unitW = (width - gap * (cols - 1)) / cols;
-  const height = grid.height || Math.round((unitW * rows) + (gap * (rows - 1)));
+  let tabletMedia = '';
+  if (responsive?.tablet?.cells) {
+    const tabletCols = responsive.tablet.cols || 2;
+    const tabletCellStyles = responsive.tablet.cells.map(cell => {
+      return `    .cell-${cell.id} { grid-area: ${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}; }`;
+    }).join('\n');
+    
+    tabletMedia = `
+  @media (max-width: 1024px) {
+    .bento-grid {
+      grid-template-columns: repeat(${tabletCols}, 1fr);
+      grid-template-rows: none !important;
+      grid-auto-rows: 120px;
+      height: auto !important;
+      aspect-ratio: auto !important;
+    }
+${tabletCellStyles}
+  }`;
+  }
 
-  const cellBlocks = cells.map(cell => {
-    const style = [
-      `grid-area: ${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}`,
+  let mobileMedia = '';
+  if (responsive?.mobile?.cells) {
+    const mobileCols = responsive.mobile.cols || 1;
+    const mobileCellStyles = responsive.mobile.cells.map(cell => {
+      return `    .cell-${cell.id} { grid-area: ${cell.r + 1} / ${cell.c + 1} / ${cell.r + 1 + cell.rowSpan} / ${cell.c + 1 + cell.colSpan}; }`;
+    }).join('\n');
+    
+    mobileMedia = `
+  @media (max-width: 640px) {
+    .bento-grid {
+      grid-template-columns: repeat(${mobileCols}, 1fr);
+      grid-template-rows: none !important;
+      grid-auto-rows: 100px;
+      height: auto !important;
+    }
+${mobileCellStyles}
+  }`;
+  }
+
+  const htmlCells = cells.map(cell => {
+    const baseStyle = [
       `background-color: ${cell.hex || '#d9d9d9'}`,
       `opacity: ${cell.opacity ?? 1}`,
-      `border-radius: ${cellRadius}px`,
-      `overflow: hidden`,
-      `position: relative`
+      `border-radius: ${cellRadius}px`
     ].join('; ');
 
     let innerContent = '';
-
     if (cell.type === 'image' && cell.imageUrl) {
       const fit = cell.imageStyle?.fit || 'cover';
       const scale = cell.imageStyle?.scale || 1;
-      innerContent = `\n  <img src="${cell.imageUrl}" alt="" style="width:100%;height:100%;object-fit:${fit};transform:scale(${scale});position:absolute;inset:0;" />`;
+      const position = cell.imageStyle?.position || 'center';
+      innerContent = `\n    <img src="${cell.imageUrl}" alt="" style="width:100%;height:100%;object-fit:${fit};object-position:${position};transform:scale(${scale});position:absolute;inset:0;" />`;
     }
 
-    return `<div style="${style}">${innerContent}\n</div>`;
-  }).join('\n\n');
+    return `  <div class="cell-${cell.id}" style="${baseStyle}; position:relative; overflow:hidden;">${innerContent}\n  </div>`;
+  }).join('\n');
 
-  return `<div
-  class="bento-grid"
-  style="display:grid;width:${width}px;height:${height}px;grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr);gap:${gap}px;box-sizing:border-box;"
->
-${cellBlocks}
+  // Calculate desktop height
+  const unitW = (grid.width - gap * (desktopCols - 1)) / desktopCols;
+  const desktopHeight = grid.height || Math.round((unitW * grid.rows) + (gap * (grid.rows - 1)));
+
+  return `<div class="bento-grid">
+${htmlCells}
 </div>
 
 <style>
   .bento-grid {
-    max-width: 100%;
+    display: grid;
+    width: 100%;
+    max-width: ${grid.width}px;
+    height: ${desktopHeight}px;
     margin: 0 auto;
+    gap: ${gap}px;
+    grid-template-columns: repeat(${desktopCols}, 1fr);
+    grid-template-rows: repeat(${grid.rows || 6}, 1fr);
+    box-sizing: border-box;
   }
-</style>
-`.trim();
+
+${desktopCellStyles}
+${tabletMedia}
+${mobileMedia}
+</style>`.trim();
 }
+
 
 program.parse();

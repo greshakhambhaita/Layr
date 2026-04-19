@@ -1,6 +1,6 @@
 {
   "name": "layr-drop",
-  "version": "1.0.5",
+  "version": "1.0.8",
   "description": "Import bento grids from Layr playground",
   "main": "index.js",
   "bin": {

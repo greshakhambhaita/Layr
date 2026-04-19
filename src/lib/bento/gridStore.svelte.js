@@ -544,7 +544,8 @@ export class GridStore {
           newRowSpan = Math.max(2, Math.min(3, Math.ceil(originalArea / 2)));
         }
       } else {
-        const shouldSpanFull = originalArea >= 8;
+        // Tablet (2 columns): Only span full width if the cell is truly massive (at least 3x3 or equivalent)
+        const shouldSpanFull = originalArea >= 32;
         newColSpan = shouldSpanFull ? 2 : 1;
         if (cell.type === 'image') {
           if (newColSpan === 2) {
@@ -607,7 +608,7 @@ export class GridStore {
     const layout = this.getResponsiveLayout();
     let maxRow = 0;
     for (const cell of layout) maxRow = Math.max(maxRow, cell.previewR + cell.previewRowSpan);
-    const previewWidth = this.currentBreakpoint === 'mobile' ? 320 : 480;
+    const previewWidth = this.currentBreakpoint === 'mobile' ? 320 : 640;
     return { cols: targetColumns, rows: Math.max(1, maxRow), width: previewWidth };
   }
 }

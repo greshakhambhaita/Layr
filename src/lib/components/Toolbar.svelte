@@ -297,7 +297,10 @@
     </div>
     <!-- Corner Radius Slider -->
     <div class="flex flex-col gap-2 mt-1">
-      <label for="side-radius" class="text-[9px] text-[var(--text-muted)]">Corner Radius</label>
+      <div class="flex items-center justify-between">
+        <label for="side-radius" class="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">Corner Radius</label>
+        <span class="text-[10px] font-mono font-bold text-[var(--accent)]">{store.cellRadius}px</span>
+      </div>
       <div class="flex items-center gap-3 px-3 py-2.5 bg-[var(--input-bg)] rounded-xl">
         <input
           id="side-radius"

@@ -1,5 +1,7 @@
 <script>
   import { serializeGrid } from '$lib/serializeGrid';
+  import BreakpointSelector from './BreakpointSelector.svelte';
+  import ResponsivePreview from './ResponsivePreview.svelte';
   let { store, isOpen, onClose } = $props();
 
   let publishing = $state(false);
@@ -66,59 +68,23 @@
             Visual layout preview · Ready for CLI export
           </span>
         </div>
-        <button
-          class="bg-[var(--input-bg)] rounded-lg w-8 h-8 flex items-center justify-center text-xs cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-all font-bold"
-          onclick={onClose}>✕</button
-        >
+
+        <div class="flex items-center gap-4">
+          <BreakpointSelector {store} />
+          <button
+            class="bg-[var(--input-bg)] rounded-lg w-8 h-8 flex items-center justify-center text-xs cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-all font-bold"
+            onclick={onClose}>✕</button
+          >
+        </div>
       </div>
 
       <div class="flex-1 flex flex-col sm:flex-row overflow-hidden">
         <!-- Preview Panel -->
         <div
-          class="flex-1 flex overflow-hidden items-center justify-center p-8 bg-[var(--code-bg)] relative bg-[radial-gradient(circle,var(--border-subtle)_1px,transparent_1px)] bg-[length:16px_16px]"
+          class="flex-1 flex overflow-hidden items-center justify-center bg-[var(--code-bg)] relative bg-[radial-gradient(circle,var(--border-subtle)_1px,transparent_1px)] bg-[length:16px_16px]"
         >
-          <div
-            class="bg-[var(--surface)] border border-[var(--border-subtle)] rounded-[2px] grid relative pointer-events-none p-2 shadow-2xl"
-            style="
-              width: {store.gridWidth}px;
-              height: {store.gridHeight}px;
-              gap: {store.gridGap}px;
-              box-sizing: border-box;
-              grid-template-columns: repeat({store.internalCols}, 1fr);
-              grid-template-rows: repeat({store.internalRows}, 1fr);
-              grid-auto-columns: 1fr;
-              grid-auto-rows: 1fr;
-              transform: scale({Math.min(
-                0.8,
-                (typeof window !== 'undefined' ? window.innerWidth * 0.5 : 400) / store.gridWidth,
-                600 / store.gridHeight,
-              )});
-              transform-origin: center;
-            "
-          >
-            {#each Object.values(store.cellMeta) as meta (meta.id)}
-              <div
-                class="border border-[var(--border-subtle)] relative flex items-center justify-center overflow-hidden"
-                style="
-                  grid-area: {meta.r + 1} / {meta.c + 1} / {meta.r + 1 + meta.rowSpan} / {meta.c + 1 + meta.colSpan};
-                  background: {meta.hex || '#d9d9d9'};
-                  opacity: {meta.opacity ?? 1};
-                  border-radius: {store.cellRadius}px;
-                  {meta.clipPath ? `clip-path: ${meta.clipPath};` : ''}
-                "
-              >
-                {#if meta.type === "image" && meta.imageUrl}
-                  <img
-                    src={meta.imageUrl}
-                    alt=""
-                    class="absolute inset-0 w-full h-full"
-                    style="object-fit: {meta.imageStyle.fit}; object-position: {meta.imageStyle.position}; transform: scale({meta.imageStyle.scale});"
-                  />
-                {/if}
-                <div class="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-black/5 opacity-40"></div>
-                <span class="font-mono text-[9px] text-white/20 z-[1]">{meta.id}</span>
-              </div>
-            {/each}
+          <div class="w-full h-full">
+            <ResponsivePreview {store} />
           </div>
         </div>
 

@@ -2,6 +2,7 @@
  * Composable for panning and zooming the bento grid.
  */
 import { onMount } from "svelte";
+import { themeStore } from "$lib/themeStore.svelte.js";
 
 export function usePan(store, bentoElGetter, bentoScaleWrapGetter) {
   let scale = $state(1);
@@ -17,39 +18,51 @@ export function usePan(store, bentoElGetter, bentoScaleWrapGetter) {
     const _gap = store.gridGap;
     const _w = store.gridWidth;
     const _h = store.gridHeight;
-    // We can't easily access themeStore here unless we import it, but we can pass it or just use getComputedStyle
+    const sub = store.subdivisions || 2;
+    const mainCols = store.numCols;
+    const mainRows = store.numRows;
     
     if (!canvasEl) return;
 
     const ctx = canvasEl.getContext("2d");
     if (!ctx) return;
 
-    canvasEl.width = _w;
-    canvasEl.height = _h;
-    ctx.clearRect(0, 0, _w, _h);
+    canvasEl.width = Math.ceil(_w);
+    canvasEl.height = Math.ceil(_h);
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
 
     const gridColor = getComputedStyle(document.documentElement).getPropertyValue("--text-main").trim() || "#000";
     ctx.strokeStyle = gridColor;
-    ctx.globalAlpha = 0.25;
+    ctx.globalAlpha = themeStore.isDark ? 0.35 : 0.2;
     ctx.lineWidth = 1;
 
     const cellW = (_w - _gap * (_cols - 1)) / _cols;
     const cellH = (_h - _gap * (_rows - 1)) / _rows;
+    const mainCellW = sub * cellW + (sub - 1) * _gap;
+    const mainCellH = sub * cellH + (sub - 1) * _gap;
 
     ctx.beginPath();
-    for (let i = 0; i <= _cols; i++) {
-      let x = i * (cellW + _gap);
-      if (i === _cols) x = _w;
-      const drawX = Math.round(x);
-      ctx.moveTo(drawX, 0);
-      ctx.lineTo(drawX, _h);
-    }
-    for (let i = 0; i <= _rows; i++) {
-      let y = i * (cellH + _gap);
-      if (i === _rows) y = _h;
-      const drawY = Math.round(y);
-      ctx.moveTo(0, drawY);
-      ctx.lineTo(_w, drawY);
+    for (let r = 0; r < mainRows; r++) {
+      for (let c = 0; c < mainCols; c++) {
+        // Calculate top-left of each main cell
+        const x = c * (mainCellW + _gap);
+        const y = r * (mainCellH + _gap);
+        
+        // Use 0.5 offset for sharp lines
+        const drawX = Math.floor(x) + 0.5;
+        const drawY = Math.floor(y) + 0.5;
+        
+        // Calculate width/height, ensuring we don't clip at the very edge (canvas dims)
+        let drawW = Math.round(mainCellW);
+        let drawH = Math.round(mainCellH);
+        
+        // On the last column/row, clamp to canvas bounds minus 0.5px 
+        // to ensure the right/bottom border is fully visible within canvas pixels
+        if (c === mainCols - 1) drawW = canvasEl.width - drawX - 0.5;
+        if (r === mainRows - 1) drawH = canvasEl.height - drawY - 0.5;
+
+        ctx.rect(drawX, drawY, drawW, drawH);
+      }
     }
     ctx.stroke();
   });
