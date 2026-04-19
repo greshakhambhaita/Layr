@@ -237,13 +237,11 @@
 <main
 	class="relative min-h-screen flex flex-col items-center justify-start bg-black text-slate-50 overflow-hidden"
 >
-	<!-- Layer 0: base grid -->
+	<!-- Fixed background layers (grid + glow) -->
 	<canvas bind:this={baseCanvas} id="base"></canvas>
-
-	<!-- Layer 1: mouse/ripple glow fx -->
 	<canvas bind:this={fxCanvas} id="fx"></canvas>
 
-	<!-- Layer 2: Threlte free-floating scene -->
+	<!-- Fixed Threlte scene (cube travels via scroll in Scene.svelte) -->
 	<div class="threlte-wrapper">
 		<Canvas
 			alpha={true}
@@ -254,7 +252,7 @@
 		</Canvas>
 	</div>
 
-	<!-- Layer 3: hero text content -->
+	<!-- Hero text content -->
 	<div
 		class="relative z-[100] w-full pt-20 flex flex-col items-center text-center px-3 pointer-events-none"
 	>

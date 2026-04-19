@@ -14,7 +14,7 @@
 
   const composer = new EffectComposer(renderer);
   const bloom = new BloomEffect({
-    intensity: 0.8, // Increased from 0.21 for more glow
+    intensity: 0.8,
     luminanceThreshold: 0.15,
     luminanceSmoothing: 0.4,
     mipmapBlur: true,
@@ -37,8 +37,6 @@
     { autoInvalidate: false },
   );
 
-  // ─── Enable pointer events on the renderer DOM element ───────────────────
-  // OrbitControls attaches to renderer.domElement — make sure it can receive events
   $effect(() => {
     const el = renderer.domElement;
     el.style.pointerEvents = "auto";
@@ -52,14 +50,13 @@
   const COLS = 5;
   const ROWS = 5;
   const DEPTH = 5;
-  const CUBE_SCALE = 0.13; // Scaled down from 0.22 for density
-  const GAP = 0.35; // Reduced from 0.7 to fit in same footprint
+  const CUBE_SCALE = 0.13;
+  const GAP = 0.35;
 
   const cubes = [];
   for (let z = 0; z < DEPTH; z++) {
     for (let y = 0; y < ROWS; y++) {
       for (let x = 0; x < COLS; x++) {
-        // surface depth: 0 = outermost layer, 1 = one layer in, etc.
         const surfaceDepth = Math.min(
           x,
           COLS - 1 - x,
@@ -80,9 +77,6 @@
     }
   }
 
-  // ─── Border wireframe material (shared) ───────────────────────────────────
-  // We derive a bounding box from the loaded geometry and build a LineSegments
-  // wireframe so each cube gets thin dark edges.
   const borderMat = new THREE.LineBasicMaterial({
     color: 0x000000,
     transparent: true,
@@ -90,21 +84,17 @@
     depthWrite: false,
   });
 
-  // Clones + wireframes — built once asset resolves
   let clones = $state([]);
   let wireframes = $state([]);
 
-  // ─── Free drag rotation (all axes, quaternion-based) ────────────────────
-  // Using a quaternion accumulator avoids gimbal lock and allows the user
-  // to tumble the grid to any arbitrary orientation.
-  const rotationQuat = new THREE.Quaternion(); // current displayed rotation
-  const targetQuat = new THREE.Quaternion(); // rotation we're lerping to
+  // ─── Free drag rotation ───────────────────────────────────────────────────
+  const rotationQuat = new THREE.Quaternion();
+  const targetQuat = new THREE.Quaternion();
   let isDragging = false;
   let previousX = 0;
   let previousY = 0;
-  let lastDragAt = 0; // timestamp of last drag move
+  let lastDragAt = 0;
 
-  // Track quaternion components as reactive state so Threlte reacts
   let qx = $state(0),
     qy = $state(0),
     qz = $state(0),
@@ -121,14 +111,11 @@
 
     const handlePointerMove = (e) => {
       if (!isDragging) return;
-
       const dx = e.clientX - previousX;
       const dy = e.clientY - previousY;
       previousX = e.clientX;
       previousY = e.clientY;
 
-      // Horizontal drag → rotate around world Y
-      // Vertical drag   → rotate around world X
       const yawQ = new THREE.Quaternion().setFromAxisAngle(
         new THREE.Vector3(0, 1, 0),
         dx * sensitivity,
@@ -159,20 +146,17 @@
 
   const identityQuat = new THREE.Quaternion();
   let baseYaw = 0;
-  const baseTilt = new THREE.Euler(0.2, 0.4, 0); // Slight tilt
+  const baseTilt = new THREE.Euler(0.2, 0.4, 0);
 
   useTask(() => {
     const now = performance.now() / 1000;
-    const idleForRotation = now - lastDragAt > 0.6; // grace period before returning
+    const idleForRotation = now - lastDragAt > 0.6;
 
     if (idleForRotation) {
-      // Slow idle spin
       baseYaw += 0.002;
       identityQuat.setFromEuler(
         new THREE.Euler(baseTilt.x, baseYaw, baseTilt.z),
       );
-
-      // Slerp back to original orientation — faster return
       targetQuat.slerp(identityQuat, 0.045);
     }
 
@@ -183,7 +167,7 @@
     qw = rotationQuat.w;
   });
 
-  // ─── Floating animation (whole grid, not per-cube) ──────────────────────
+  // ─── Floating animation ───────────────────────────────────────────────────
   let floatTime = $state(0);
   let floatY = $state(0);
 
@@ -197,14 +181,14 @@
   let fillCol = $state("#4488ff");
   let coreCol = $state("#ffaa55");
 
-  const startFill = new THREE.Color("#4488ff"); // Blue
-  const endFill = new THREE.Color("#ff44bb"); // Pink
-  const startCore = new THREE.Color("#ffaa55"); // Orange
-  const endCore = new THREE.Color("#ffccaa"); // Peach
+  const startFill = new THREE.Color("#4488ff");
+  const endFill = new THREE.Color("#ff44bb");
+  const startCore = new THREE.Color("#ffaa55");
+  const endCore = new THREE.Color("#ffccaa");
 
   useTask((delta) => {
-    colorCycleTime += delta * 0.5; // slow speed
-    const t = (Math.sin(colorCycleTime) + 1) / 2; // 0 to 1
+    colorCycleTime += delta * 0.5;
+    const t = (Math.sin(colorCycleTime) + 1) / 2;
 
     const tempFill = startFill.clone().lerp(endFill, t);
     const tempCore = startCore.clone().lerp(endCore, t);
@@ -222,10 +206,9 @@
         if (child.isMesh) {
           child.material = child.material.clone();
           child.material.color.set(0xffffff);
-          child.material.emissive.set(0x333333); // subtle base glow
+          child.material.emissive.set(0x333333);
           child.material.emissiveIntensity = 2.0;
 
-          // Use EdgesGeometry instead of WireframeGeometry to remove diagonals
           const edgeGeo = new THREE.EdgesGeometry(child.geometry);
           const edges = new THREE.LineSegments(edgeGeo, borderMat);
           child.add(edges);
@@ -235,20 +218,15 @@
     });
   });
 
-  // ─── Interactive Repulsion (surface layers only) ─────────────────────────
-  // The cursor is always projected to Z=0 in world space (the "front face"
-  // of the group at position.x=1.4). Repulsion is then computed purely in
-  // XY so inner cubes are never reached from the inside.
+  // ─── Interactive Repulsion ────────────────────────────────────────────────
   let displacements = $state(cubes.map(() => ({ x: 0, y: 0, z: 0 })));
   const mousePosition = new THREE.Vector2();
   const raycaster = new THREE.Raycaster();
   const worldMouse = new THREE.Vector3();
-  // Project onto the front face of the grid cluster (z=0 in group-local space)
   const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
-  // Track when the cursor last moved so we can fade displacements back to 0
   let lastMouseMoveAt = 0;
-  const IDLE_RETURN_DELAY = 0.4; // seconds of stillness before returning
+  const IDLE_RETURN_DELAY = 0.4;
 
   $effect(() => {
     const updateMouse = (e) => {
@@ -260,10 +238,21 @@
     return () => window.removeEventListener("pointermove", updateMouse);
   });
 
-  // ─── Responsive Positioning ─────────────────────────────────────────────
-  let groupX = $derived(0);
-  let groupY = $derived(-0.29);
-  let groupScale = $derived($size.width < 768 ? 0.75 : 1.0);
+  // ─── Responsive Positioning ───────────────────────────────────────────────
+  let groupScale = $derived(
+    $size.width < 640
+      ? 0.6 // mobile
+      : $size.width < 1024
+        ? 0.88 // tablet: closer to desktop size
+        : 1.0, // desktop: original
+  );
+
+  let currentGroupX = $derived(0);
+  let currentGroupY = $derived(
+    $size.width < 640
+      ? -0.6 // mobile
+      : -0.29, // tablet + desktop: original
+  );
 
   useTask(() => {
     if (!camera.current) return;
@@ -274,13 +263,11 @@
     raycaster.setFromCamera(mousePosition, camera.current);
     raycaster.ray.intersectPlane(plane, worldMouse);
 
-    // Anchor offset — use the dynamic groupX/groupY
-    const anchor = new THREE.Vector3(groupX, groupY, 0);
+    const anchor = new THREE.Vector3(currentGroupX, currentGroupY, 0);
     const localMouse = worldMouse.clone().sub(anchor);
 
     const radius = 1.2;
     const strength = 0.8;
-    // Surface layer limit: only repel cubes 0 or 1 layers deep from surface
     const MAX_SURFACE_DEPTH = 1;
 
     displacements = cubes.map((cube, i) => {
@@ -289,7 +276,6 @@
         tz = 0;
 
       if (!isIdle && cube.surfaceDepth <= MAX_SURFACE_DEPTH) {
-        // Only measure XY distance
         const dx = cube.bx - localMouse.x;
         const dy = cube.by - localMouse.y;
         const dist2D = Math.sqrt(dx * dx + dy * dy);
@@ -324,10 +310,10 @@
   color={coreCol}
 />
 
-<!-- Main anchor group — floats as a whole, quaternion rotatable to any angle -->
+<!-- Main anchor group -->
 <T.Group
-  position.x={groupX}
-  position.y={groupY + floatY}
+  position.x={currentGroupX}
+  position.y={currentGroupY + floatY}
   scale={groupScale}
   quaternion={[qx, qy, qz, qw]}
 >
