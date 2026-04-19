@@ -521,9 +521,12 @@
 		const fCtx = fx.getContext("2d");
 
 		const CELL = 140;
+		const GLOW_RADIUS = 160;
 		const BORDER = 0.7;
 
 		let W, H, cols, rows;
+		let mouse = { x: -99999, y: -99999 };
+
 		let ripple = null;
 		let rippleTimer = 0;
 		const RIPPLE_INTERVAL = 3000;
@@ -548,6 +551,76 @@
 					bCtx.strokeRect(c * CELL + 0.5, r * CELL + 0.5, CELL, CELL);
 				}
 			}
+		}
+
+		function distFalloff(dist) {
+			const t = Math.max(0, 1 - dist / GLOW_RADIUS);
+			return t * t * (3 - 2 * t);
+		}
+
+		function drawSegmentSoft(x1, y1, x2, y2) {
+			const dx = x2 - x1,
+				dy = y2 - y1;
+			const len = Math.sqrt(dx * dx + dy * dy);
+			if (len < 1) return;
+
+			const mx = mouse.x,
+				my = mouse.y;
+			const t = Math.max(
+				0,
+				Math.min(1, ((mx - x1) * dx + (my - y1) * dy) / (len * len)),
+			);
+			const closestX = x1 + t * dx;
+			const closestY = y1 + t * dy;
+			const closestDist = Math.hypot(mx - closestX, my - closestY);
+
+			if (closestDist > GLOW_RADIUS) return;
+
+			const d0 = Math.hypot(mx - x1, my - y1);
+			const d1 = Math.hypot(mx - x2, my - y2);
+			const dMid = Math.hypot(mx - (x1 + x2) / 2, my - (y1 + y2) / 2);
+
+			const a0 = distFalloff(d0);
+			const a1 = distFalloff(d1);
+			const aMid = distFalloff(dMid);
+
+			if (a0 + a1 + aMid < 0.001) return;
+
+			const grad = fCtx.createLinearGradient(x1, y1, x2, y2);
+			grad.addColorStop(0, `rgba(255,255,255,${a0})`);
+			grad.addColorStop(0.5, `rgba(255,255,255,${aMid})`);
+			grad.addColorStop(1, `rgba(255,255,255,${a1})`);
+
+			fCtx.save();
+			fCtx.strokeStyle = grad;
+			fCtx.lineWidth = 18;
+			fCtx.lineCap = "round";
+			fCtx.globalAlpha = 0.07;
+			fCtx.filter = "blur(6px)";
+			fCtx.beginPath();
+			fCtx.moveTo(x1, y1);
+			fCtx.lineTo(x2, y2);
+			fCtx.stroke();
+
+			fCtx.filter = "none";
+			fCtx.globalAlpha = 1;
+			fCtx.strokeStyle = grad;
+			fCtx.lineWidth = 4;
+			fCtx.globalAlpha = 0.18;
+			fCtx.beginPath();
+			fCtx.moveTo(x1, y1);
+			fCtx.lineTo(x2, y2);
+			fCtx.stroke();
+
+			fCtx.globalAlpha = 1;
+			fCtx.strokeStyle = grad;
+			fCtx.lineWidth = 0.9;
+			fCtx.beginPath();
+			fCtx.moveTo(x1, y1);
+			fCtx.lineTo(x2, y2);
+			fCtx.stroke();
+
+			fCtx.restore();
 		}
 
 		function drawRippleRim(c, r, alpha) {
@@ -599,6 +672,22 @@
 
 			fCtx.clearRect(0, 0, W, H);
 
+			const hcX = Math.floor(mouse.x / CELL);
+			const hcY = Math.floor(mouse.y / CELL);
+			const span = Math.ceil(GLOW_RADIUS / CELL) + 1;
+
+			for (let c = hcX - span; c <= hcX + span; c++) {
+				for (let r = hcY - span; r <= hcY + span; r++) {
+					if (c < 0 || r < 0 || c >= cols || r >= rows) continue;
+					const x = c * CELL;
+					const y = r * CELL;
+					drawSegmentSoft(x, y, x + CELL, y);
+					drawSegmentSoft(x, y + CELL, x + CELL, y + CELL);
+					drawSegmentSoft(x, y, x, y + CELL);
+					drawSegmentSoft(x + CELL, y, x + CELL, y + CELL);
+				}
+			}
+
 			if (ripple) {
 				for (let c = 0; c < cols; c++) {
 					for (let r = 0; r < rows; r++) {
@@ -614,6 +703,17 @@
 			requestAnimationFrame(tick);
 		}
 
+		const handleMouseMove = (e) => {
+			mouse.x = e.clientX;
+			mouse.y = e.clientY;
+		};
+		const handleMouseLeave = () => {
+			mouse.x = -99999;
+			mouse.y = -99999;
+		};
+
+		window.addEventListener("mousemove", handleMouseMove);
+		window.addEventListener("mouseleave", handleMouseLeave);
 		window.addEventListener("resize", resize);
 		resize();
 
@@ -623,6 +723,8 @@
 		});
 
 		return () => {
+			window.removeEventListener("mousemove", handleMouseMove);
+			window.removeEventListener("mouseleave", handleMouseLeave);
 			window.removeEventListener("resize", resize);
 		};
 	});
@@ -665,7 +767,7 @@
 		<div class="relative z-10">
 			<!-- Header -->
 			<header
-				class="fixed top-0 left-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-white/20 py-4 px-6 md:py-6 md:px-12"
+				class="fixed top-0 left-0 w-full z-50 bg-black/80 backdrop-blur-md border-b-2 border-white/20 py-3 px-6 md:py-4 md:px-12"
 			>
 				<div class="w-full flex justify-between items-center">
 					<a
@@ -689,7 +791,7 @@
 						<p
 							class="text-white/40 font-light text-[10px] md:text-xs uppercase tracking-[0.2em]"
 						>
-							22 curated patterns
+							curated patterns
 						</p>
 					</div>
 				</div>
@@ -697,20 +799,20 @@
 
 			<!-- Table Grid -->
 			<div
-				class="pt-[80px] md:pt-[100px] w-full grid grid-cols-1 md:grid-cols-2 border-t border-white/20"
+				class="pt-[70px] md:pt-[80px] w-full grid grid-cols-1 md:grid-cols-2 border-t-2 border-white/20"
 			>
 				{#each allTemplates as template, i}
 					<div
 						use:reveal
-						class="template-card border-b border-white/20 {i % 2 === 0
-							? 'md:border-r'
-							: ''} p-6 md:p-10 flex flex-col gap-8 group transition-colors hover:bg-white/[0.02]"
+						class="template-card border-b-2 border-white/20 {i % 2 === 0
+							? 'md:border-r-2'
+							: ''} p-6 md:p-8 flex flex-col gap-6 group transition-colors hover:bg-white/[0.02]"
 					>
 						<!-- Header Info -->
 						<div class="flex justify-between items-start">
 							<div class="flex flex-col gap-2">
 								<span
-									class="text-white/20 text-[10px] uppercase tracking-[0.2em]"
+									class="text-white/50 text-[10px] uppercase tracking-[0.2em]"
 									>P-{String(i + 1).padStart(2, "0")}</span
 								>
 								<h3
@@ -724,9 +826,19 @@
 							</div>
 							<button
 								onclick={() => handleSelectTemplate(template)}
-								class="select-btn px-6 py-2.5 border-2 border-white/20 text-white/40 text-[11px] font-bold rounded uppercase tracking-widest transition-all whitespace-nowrap"
+								class="group relative px-6 py-2.5 overflow-hidden rounded-full border border-white/10 bg-white/5 font-arimo text-[10px] uppercase tracking-[0.2em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 whitespace-nowrap"
 							>
-								Select
+								<div
+									class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+								></div>
+								<span class="relative z-10 text-white/60 group-hover:text-white"
+									>Select</span
+								>
+
+								<!-- Subtle glow effect -->
+								<div
+									class="absolute -inset-px rounded-full bg-gradient-to-r from-blue-500/0 via-white/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity"
+								></div>
 							</button>
 						</div>
 
@@ -735,7 +847,7 @@
 							class="flex-1 w-full flex items-center justify-center pointer-events-none"
 						>
 							<div
-								class="bento-grid-wrapper w-full flex items-center justify-center scale-90 md:scale-[0.75]"
+								class="bento-grid-wrapper w-full flex items-center justify-center scale-90 md:scale-[0.8]"
 							>
 								<div
 									class="bento-grid relative z-10 w-full"
@@ -800,14 +912,14 @@
 
 						<!-- Footer Metadata -->
 						<div
-							class="mt-auto flex justify-between items-center pt-8 border-t border-white/[0.05] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+							class="mt-auto flex justify-between items-center pt-6 border-t border-white/[0.05] opacity-40 group-hover:opacity-80 transition-opacity duration-500"
 						>
-							<span class="text-white/20 text-[12px] uppercase tracking-widest"
+							<span class="text-white/70 text-[12px] uppercase tracking-widest"
 								>{template.numCols * 2} Resolution Columns</span
 							>
 							<div class="flex gap-2">
 								{#each [1, 2, 3] as _}
-									<div class="w-1 h-1 rounded-full bg-white/10"></div>
+									<div class="w-1 h-1 rounded-full bg-white/70"></div>
 								{/each}
 							</div>
 						</div>

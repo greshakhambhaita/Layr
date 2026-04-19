@@ -271,9 +271,40 @@
 				>
 					Create, customize, and export grid systems with zero friction.
 				</p>
+
 			</div>
 		{/if}
 	</div>
+
+	<!-- CTA Buttons - Fixed at bottom for prominent entry over the cube -->
+	{#if mounted}
+		<div
+			class="fixed bottom-12 left-1/2 -translate-x-1/2 z-[110] flex flex-row items-center gap-8 pointer-events-none"
+			in:fly={{ y: 30, duration: 1200, delay: 1000 }}
+		>
+			<a
+				href="/templates"
+				class="group relative px-10 py-4 overflow-hidden rounded-full bg-white text-black font-arimo text-xs uppercase tracking-[0.25em] transition-all hover:bg-neutral-200 active:scale-95 pointer-events-auto"
+			>
+				<span class="relative z-10">Browse Templates</span>
+			</a>
+
+			<a
+				href="/playground"
+				class="group relative px-10 py-4 overflow-hidden rounded-full border border-white/10 bg-black/40 backdrop-blur-md font-arimo text-xs uppercase tracking-[0.25em] transition-all hover:border-white/40 hover:bg-white/10 active:scale-95 pointer-events-auto"
+			>
+				<div
+					class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent opacity-0 transition-opacity group-hover:opacity-100"
+				></div>
+				<span class="relative z-10 text-white">Launch Playground</span>
+
+				<!-- Subtle glow effect -->
+				<div
+					class="absolute -inset-px rounded-full bg-gradient-to-r from-blue-500/0 via-white/10 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity"
+				></div>
+			</a>
+		</div>
+	{/if}
 </main>
 
 <style>
