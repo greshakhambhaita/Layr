@@ -2,25 +2,23 @@
   import { useDrag } from "$lib/composables/useDrag.svelte.js";
   import { usePan } from "$lib/composables/usePan.svelte.js";
   import { useResize } from "$lib/composables/useResize.svelte.js";
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import GridCell from "./GridCell.svelte";
 
-  let { store, isMultiSelectMode = false } = $props();
+  let { store, isMultiSelectMode = false, editable = true } = $props();
 
   let bentoEl = $state(null);
   let bentoScaleWrap = $state(null);
   let isMobile = $state(false);
 
   // Initialize Composables
-  let drag, resize;
-
   const pan = usePan(
     store,
     () => bentoEl,
     () => bentoScaleWrap,
   );
 
-  drag = useDrag(
+  const drag = useDrag(
     store,
     () => bentoEl,
     () => bentoScaleWrap,
@@ -29,7 +27,7 @@
     },
   );
 
-  resize = useResize(store, () => bentoEl, {
+  const resize = useResize(store, () => bentoEl, {
     getSlotFromPoint: (cx, cy, scale) => drag?.getSlotFromPoint(cx, cy, scale),
   });
 
@@ -66,21 +64,57 @@
   let scaledHeight = $derived(gridInfo.rows * ((store.gridHeight / store.internalRows) + store.gridGap) * pan.scale);
 
   function handleMouseMove(e) {
+    if (!editable) return;
     pan.handleMouseMove(e);
     drag.handleMouseMove(e, pan.scale);
     resize.handleMouseMove(e, pan.scale);
   }
 
   function handleMouseUp() {
+    if (!editable) return;
     pan.handleMouseUp();
     drag.handleMouseUp();
     resize.handleMouseUp();
+  }
+
+  function handleKeyDown(e) {
+    if (!editable) return;
+    
+    // Undo/Redo: Cmd+Z / Cmd+Shift+Z
+    if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        store.redo();
+      } else {
+        store.undo();
+      }
+      return;
+    }
+
+    // Union: U
+    if (e.key.toLowerCase() === 'u' && store.selectedCellIds.size >= 2) {
+      if (store.areCellsContiguous([...store.selectedCellIds])) {
+        store.unionCells([...store.selectedCellIds]);
+      }
+      return;
+    }
+
+    // Delete: Delete or Backspace
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const ids = [...store.selectedCellIds];
+      if (ids.length > 0) {
+        ids.forEach(id => store.removeCell(id));
+        store.clearSelection();
+      }
+      return;
+    }
   }
 </script>
 
 <svelte:window
   onmousemove={handleMouseMove}
   onmouseup={handleMouseUp}
+  onkeydown={handleKeyDown}
   ontouchmove={handleMouseMove}
   ontouchend={handleMouseUp}
 />
@@ -91,16 +125,16 @@
   role="presentation"
   style="
     height: {scaledHeight + 40}px;
-    cursor: {pan.isPanning
+    cursor: {!editable ? 'default' : (pan.isPanning
     ? 'grabbing'
     : pan.isSpacePressed
       ? 'grab'
-      : 'default'};
+      : 'default')};
     touch-action: none;
   "
-  onwheel={pan.handleWheel}
-  onmousedown={pan.handlePanStart}
-  ontouchstart={pan.handlePanStart}
+  onwheel={editable ? pan.handleWheel : null}
+  onmousedown={editable ? pan.handlePanStart : null}
+  ontouchstart={editable ? pan.handlePanStart : null}
 >
   <!-- Wrapper with scaled dimensions for proper centering -->
   <div
@@ -138,7 +172,7 @@
           role="button"
           tabindex="0"
           onmousedown={(e) =>
-            drag.handleDragStart(
+            editable && drag.handleDragStart(
               e,
               cell.id,
               pan.scale,
@@ -146,7 +180,7 @@
               isMultiSelectMode,
             )}
           ontouchstart={(e) =>
-            drag.handleDragStart(
+             editable && drag.handleDragStart(
               e,
               cell.id,
               pan.scale,
@@ -154,7 +188,7 @@
               isMultiSelectMode,
             )}
           onkeydown={(e) => {
-            if (e.key === "Enter" || e.key === " ")
+            if (editable && (e.key === "Enter" || e.key === " "))
               store.toggleSelection(cell.id, e.shiftKey);
           }}
         >
@@ -165,19 +199,20 @@
             rowSpan={cell.previewRowSpan}
             colSpan={cell.previewColSpan}
             cellRadius={store.cellRadius}
-            isSelected={store.selectedCellIds.has(cell.id)}
-            isMultiSelected={store.selectedCellIds.has(cell.id) &&
+            clipPath={store.currentBreakpoint === 'desktop' ? cell.clipPath : ''}
+            isSelected={editable && store.selectedCellIds.has(cell.id)}
+            isMultiSelected={editable && store.selectedCellIds.has(cell.id) &&
               store.selectedCellIds.size > 1}
             isHero={heroId === cell.id}
             isDragging={drag.dragSourceId === cell.id}
             onResizeStart={(id, corner, cx, cy) =>
-              resize.handleResizeStart(id, corner, cx, cy, pan.scale)}
+              editable && resize.handleResizeStart(id, corner, cx, cy, pan.scale)}
           />
         </div>
       {/each}
 
       <!-- Snap Indicator -->
-      {#if drag.isDragging && drag.snapSlot}
+      {#if editable && drag.isDragging && drag.snapSlot}
         {@const sourceMeta = responsiveLayout.find(l => l.id === drag.dragSourceId)}
         <div
           class="snap-indicator absolute pointer-events-none z-10 transition-all duration-200 rounded-[4px] border-[3px] shadow-sm animate-pulseFast
@@ -212,7 +247,7 @@
       {/if}
 
       <!-- Resize Ghost -->
-      {#if resize.isResizing}
+      {#if editable && resize.isResizing}
         <div
           class="absolute border-[2.5px] border-dashed rounded-[4px] pointer-events-none z-20 shadow-inner
           {!resize.resizeGhost.blocked
@@ -228,7 +263,7 @@
       {/if}
 
       <!-- Empty State Guide -->
-      {#if Object.keys(store.cellMeta).length === 0}
+      {#if editable && Object.keys(store.cellMeta).length === 0}
         <div
           class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400 font-mono text-sm opacity-50 pointer-events-none"
         >
@@ -240,6 +275,7 @@
   </div>
 
   <!-- Navigation Hint - Desktop Only -->
+  {#if editable}
   <div
     class="hidden lg:flex fixed bottom-6 left-1/2 -translate-x-1/2 items-center gap-6 px-4 py-2 bg-[var(--surface)]/70 backdrop-blur-md border border-[var(--border-subtle)] rounded-xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.2)] z-50 text-[10px] font-medium text-[var(--text-muted)] pointer-events-none select-none animate-hintIn"
   >
@@ -282,6 +318,7 @@
       <span class="ml-1 opacity-60">to Multi-select</span>
     </div>
   </div>
+  {/if}
   <!-- Drag Ghost Visual -->
   {#if drag.isDragging}
     <div

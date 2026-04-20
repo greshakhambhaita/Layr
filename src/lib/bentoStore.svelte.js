@@ -6,6 +6,7 @@
 import { GridStore } from './bento/gridStore.svelte.js';
 import { SelectionStore } from './bento/selectionStore.svelte.js';
 import { FuseStore } from './bento/fuseStore.svelte.js';
+import { HistoryManager } from './bento/historyStore.svelte.js';
 import * as utils from './bento/clipPathUtils.js';
 
 export { BREAKPOINTS } from './bento/gridStore.svelte.js';
@@ -14,9 +15,11 @@ export class BentoStore {
   grid = new GridStore();
   selection = new SelectionStore();
   fuse = new FuseStore(this.grid, this.selection);
+  history = new HistoryManager();
 
   constructor() {
     this.resetGrid();
+    this.saveHistory();
   }
 
   // --- Grid State Proxies ---
@@ -81,7 +84,10 @@ export class BentoStore {
 
   addCell(colSpan, rowSpan) {
     const id = this.grid.addCell(colSpan, rowSpan);
-    if (id) this.selection.set([id]);
+    if (id) {
+      this.selection.set([id]);
+      this.saveHistory();
+    }
   }
 
   removeCell(id) {
@@ -89,6 +95,7 @@ export class BentoStore {
     const newSet = new Set(this.selectedCellIds);
     newSet.delete(id);
     this.selectedCellIds = newSet;
+    this.saveHistory();
   }
 
   updateCell(id, updates) {
@@ -150,6 +157,7 @@ export class BentoStore {
         this.grid.claimSlots(id, cell.r, cell.c, cell.rowSpan, cell.colSpan);
       });
     }
+    this.saveHistory();
   }
 
   // --- Selection Methods ---
@@ -157,7 +165,10 @@ export class BentoStore {
   clearSelection() { this.selection.clear(); }
 
   // --- Fusion Methods ---
-  unionCells(ids) { this.fuse.unionCells(ids); }
+  unionCells(ids) { 
+    this.fuse.unionCells(ids); 
+    this.saveHistory();
+  }
   updateFusedClipPaths() { this.fuse.updateFusedClipPaths(); }
   areCellsContiguous(ids) { return utils.areCellsContiguous(ids, this.cellMeta); }
   computeClipPath(...args) { return utils.computeClipPath(...args); }
@@ -168,9 +179,15 @@ export class BentoStore {
 
   // --- Displacement ---
   computeDisplacePlan(id, nr, nc) { return this.grid.computeDisplacePlan(id, nr, nc); }
-  applyMove(id, r, c, planMoves = []) { this.grid.applyMove(id, r, c, planMoves); }
+  applyMove(id, r, c, planMoves = []) { 
+    this.grid.applyMove(id, r, c, planMoves); 
+    this.saveHistory();
+  }
   planResize(id, newR, newC, newRowSpan, newColSpan) { return this.grid.planResize(id, newR, newC, newRowSpan, newColSpan); }
-  applyResize(id, plan) { this.grid.applyResize(id, plan); }
+  applyResize(id, plan) { 
+    this.grid.applyResize(id, plan); 
+    this.saveHistory();
+  }
 
   // --- Responsive ---
   setBreakpoint(breakpoint) {
@@ -180,4 +197,45 @@ export class BentoStore {
   getResponsiveLayout() { return this.grid.getResponsiveLayout(); }
   compactLayout(cells, targetColumns) { return this.grid.compactLayout(cells, targetColumns); }
   getPreviewGridDimensions() { return this.grid.getPreviewGridDimensions(); }
+
+  // --- History Management ---
+  saveHistory() {
+    this.history.push({
+      numCols: this.numCols,
+      numRows: this.numRows,
+      gridWidth: this.gridWidth,
+      gridGap: this.gridGap,
+      cellRadius: this.cellRadius,
+      gridX: this.gridX,
+      gridY: this.gridY,
+      cellMeta: this.cellMeta,
+      slotMap: this.slotMap,
+      nextId: this.nextId
+    });
+  }
+
+  undo() {
+    const state = this.history.undo();
+    if (state) this.restoreState(state);
+  }
+
+  redo() {
+    const state = this.history.redo();
+    if (state) this.restoreState(state);
+  }
+
+  restoreState(state) {
+    this.numCols = state.numCols;
+    this.numRows = state.numRows;
+    this.gridWidth = state.gridWidth;
+    this.gridGap = state.gridGap;
+    this.cellRadius = state.cellRadius;
+    this.gridX = state.gridX;
+    this.gridY = state.gridY;
+    this.cellMeta = state.cellMeta;
+    this.slotMap = state.slotMap;
+    this.nextId = state.nextId;
+    this.clearSelection();
+  }
 }
+

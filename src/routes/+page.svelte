@@ -414,6 +414,11 @@
 					>
 					<div class="flex flex-col gap-4">
 						<a
+							href="/guide"
+							class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+							>Technical Guide</a
+						>
+						<a
 							href="/"
 							class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
 							>GitHub Repository</a

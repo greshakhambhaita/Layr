@@ -71,7 +71,6 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <BreakpointSelector {store} />
           <button
             class="bg-[var(--input-bg)] rounded-lg w-8 h-8 flex items-center justify-center text-xs cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-all font-bold"
             onclick={onClose}>✕</button
@@ -87,7 +86,7 @@
           <div class="w-full h-full overflow-auto flex items-center justify-center p-10">
              {#key store.currentBreakpoint}
                 {#if store.currentBreakpoint === 'desktop'}
-                    <BentoContainer {store} />
+                    <BentoContainer {store} editable={false} />
                 {:else}
                     {@const isMobileView = store.currentBreakpoint === 'mobile'}
                     <div 
@@ -96,7 +95,7 @@
                     >
                         <!-- Screen Content -->
                         <div class="w-full h-full bg-[var(--app-bg)] overflow-auto scrollbar-hide pt-10 pb-8 px-4">
-                            <BentoContainer {store} />
+                            <BentoContainer {store} editable={false} />
                         </div>
                     </div>
                 {/if}

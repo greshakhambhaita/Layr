@@ -783,6 +783,9 @@
 								class="h-7 md:h-8 w-auto opacity-25 invert group-hover:opacity-100 transition-opacity duration-500"
 							/>
 						</a>
+						<div class="h-4 w-[1px] bg-white/10"></div>
+						<a href="/guide" class="text-[10px] uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors">Technical Guide</a>
+
 					</div>
 
 					<div

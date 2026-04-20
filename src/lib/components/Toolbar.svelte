@@ -2,6 +2,7 @@
   import ColorPicker from "./ColorPicker.svelte";
   import ImageEditor from "./ImageEditor.svelte";
   import { themeStore } from '$lib/themeStore.svelte.js';
+  import { onMount, tick } from "svelte";
 
   let { store, isMobile = false, onClose = () => {} } = $props();
 
@@ -88,6 +89,7 @@
       colorPickerOpen = false;
     }
   }
+
 </script>
 
 <svelte:window onclick={handleClickOutside} />
@@ -655,6 +657,7 @@
         <span class="relative z-10">GRID PREVIEW</span>
       </button>
     {/if}
+
     <button
       class="w-full text-center text-[var(--text-subtle)] font-bold text-[11px] tracking-widest hover:text-[var(--text-muted)] transition-all uppercase"
       class:py-2={isMobile}

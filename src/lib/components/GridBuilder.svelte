@@ -54,9 +54,9 @@
         />
       </a>
       <div class="h-4 w-[1px] bg-[var(--border-subtle)]"></div>
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-6">
         <a href="/templates" class="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-white transition-colors">Templates</a>
-
+        <a href="/guide" class="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] hover:text-white transition-colors">Technical Guide</a>
         <span class="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[8px] text-white/20 uppercase tracking-widest font-mono">v1.2</span>
       </div>
     </div>
