@@ -9,8 +9,6 @@
 
 A high-performance, professional Bento Grid layout builder for modern web interfaces. Design, preview, and export responsive grid systems with a seamless desktop-first workflow.
 
-**[Launch Playground](/playground)**
-
 </div>
 
 ---
