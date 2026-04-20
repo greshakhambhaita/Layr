@@ -5,7 +5,6 @@
   import BentoContainer from "./BentoContainer.svelte";
   import BreakpointSelector from "./BreakpointSelector.svelte";
   import CodeExportModal from "./CodeExportModal.svelte";
-  import ResponsivePreview from "./ResponsivePreview.svelte";
   import Toolbar from "./Toolbar.svelte";
 
   const store = new BentoStore();
@@ -135,12 +134,32 @@
         <div
           class="animate-breakpointTransition w-full h-full flex items-center justify-center"
         >
-          {#if store.isPreviewMode}
-            <!-- Responsive Preview Mode -->
-            <ResponsivePreview {store} />
-          {:else}
+          {#if store.currentBreakpoint === 'desktop'}
             <!-- Desktop Edit Mode -->
             <BentoContainer {store} {isMultiSelectMode} />
+          {:else}
+            <!-- Responsive Edit Mode with Device Frame -->
+            {@const dims = store.getPreviewGridDimensions()}
+            {@const isMobileView = store.currentBreakpoint === 'mobile'}
+            <div 
+              class="device-frame relative bg-[var(--surface)] overflow-hidden transition-all duration-500 rounded-[32px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.4)] border-[6px] border-[#71717a] dark:border-[#2a2a2a] flex flex-col items-center"
+              style="width: {isMobileView ? 375 : 768}px; height: {isMobileView ? 667 : 1024}px;"
+            >
+              <!-- Notch -->
+              {#if isMobileView}
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 bg-[#71717a] dark:bg-[#2a2a2a] rounded-b-2xl z-20 w-[120px] h-[24px]"></div>
+              {/if}
+              
+              <!-- Screen Content -->
+              <div class="w-full h-full bg-[var(--app-bg)] overflow-auto scrollbar-hide pt-10 pb-8 px-4">
+                <BentoContainer {store} {isMultiSelectMode} />
+              </div>
+
+              <!-- Home Indicator -->
+              {#if isMobileView}
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 bg-[var(--text-muted)]/30 rounded-full w-[100px] h-[4px]"></div>
+              {/if}
+            </div>
           {/if}
         </div>
       {/key}

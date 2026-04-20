@@ -22,12 +22,14 @@ export function useDrag(store, bentoElGetter, bentoScaleWrapGetter, options = {}
     const internalX = (cx - rect.left) / scale;
     const internalY = (cy - rect.top) / scale;
 
-    const internalCellW = (store.gridWidth + store.gridGap) / store.internalCols;
-    const internalCellH = (store.gridHeight + store.gridGap) / store.internalRows;
+    const { cols, rows, width } = store.getPreviewGridDimensions();
+    const cellW = (width + store.gridGap) / cols;
+    // We don't have a fixed height for the preview, so we use the same aspect as desktop or estimate
+    const cellH = (store.gridHeight + store.gridGap) / store.internalRows; 
 
     return {
-      c: Math.max(0, Math.min(Math.floor(internalX / internalCellW), store.internalCols - 1)),
-      r: Math.max(0, Math.min(Math.floor(internalY / internalCellH), store.internalRows - 1)),
+      c: Math.max(0, Math.min(Math.floor(internalX / cellW), cols - 1)),
+      r: Math.max(0, Math.min(Math.floor(internalY / cellH), rows - 1)),
     };
   }
 
@@ -78,7 +80,10 @@ export function useDrag(store, bentoElGetter, bentoScaleWrapGetter, options = {}
       ghostPos.x = clientX - dragOffsetX - wrapRect.left;
       ghostPos.y = clientY - dragOffsetY - wrapRect.top;
 
-      const snapX = clientX - dragOffsetX + (store.gridWidth / store.internalCols / 2) * scale;
+      const { cols, width } = store.getPreviewGridDimensions();
+      const cellW = width / cols;
+      
+      const snapX = clientX - dragOffsetX + (cellW / 2) * scale;
       const snapY = clientY - dragOffsetY + (store.gridHeight / store.internalRows / 2) * scale;
 
       const slot = getSlotFromPoint(snapX, snapY, scale);

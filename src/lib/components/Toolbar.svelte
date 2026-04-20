@@ -127,15 +127,39 @@
     </button>
   </div>
 
+  <!-- Section: Responsive Settings -->
+  {#if store.currentBreakpoint !== 'desktop'}
+    <section class="flex flex-col gap-3 animate-dropdownIn">
+      <div class="flex items-center justify-between">
+        <h3 class="text-[10px] font-bold text-amber-500 dark:text-amber-400 uppercase tracking-wider">
+          {store.currentBreakpoint} Overrides
+        </h3>
+        <button 
+          class="text-[9px] font-bold text-[var(--accent)] hover:underline uppercase"
+          onclick={() => {
+            Object.values(store.cellMeta).forEach(meta => {
+              if (meta.overrides?.[store.currentBreakpoint]) {
+                delete meta.overrides[store.currentBreakpoint];
+              }
+            });
+            store.syncSlotMap();
+          }}
+        >
+          Reset to Auto
+        </button>
+      </div>
+      <p class="text-[10px] text-[var(--text-muted)] leading-relaxed italic">
+        Any moves or resizes you make in this view will only affect the {store.currentBreakpoint} layout.
+      </p>
+    </section>
+  {/if}
+
   <!-- Section: Create -->
-  <section class="flex flex-col gap-3" class:opacity-40={isPreviewMode} class:pointer-events-none={isPreviewMode}>
+  <section class="flex flex-col gap-3" class:opacity-40={store.currentBreakpoint !== 'desktop'} class:pointer-events-none={store.currentBreakpoint !== 'desktop'}>
     <div class="flex items-center justify-between">
       <h3 class="text-[10px] font-bold text-[var(--text-subtle)] uppercase tracking-wider">
         Create
       </h3>
-      {#if isPreviewMode}
-        <span class="text-[9px] font-medium text-amber-500 dark:text-amber-400">Preview Mode</span>
-      {/if}
     </div>
     <div class="relative">
       <button
@@ -196,12 +220,12 @@
   </section>
 
   <!-- Section: Selection -->
-  <section class="flex flex-col gap-3" class:opacity-40={isPreviewMode} class:pointer-events-none={isPreviewMode}>
+  <section class="flex flex-col gap-3">
     <h3 class="text-[10px] font-bold text-[var(--text-subtle)] uppercase tracking-wider">
       Selection
     </h3>
     <div class="flex flex-col gap-2" class:opacity-40={multiSelectCount === 0} class:pointer-events-none={multiSelectCount === 0}>
-      {#if multiSelectCount >= 2}
+      {#if multiSelectCount >= 2 && store.currentBreakpoint === 'desktop'}
         <button
           disabled={!isContiguous || multiSelectCount === 0}
           class="h-10 flex items-center justify-center gap-2 px-4 rounded-lg text-[12px] font-semibold transition-all shadow-none
@@ -220,7 +244,7 @@
           class="h-10 flex items-center justify-center px-4 bg-[var(--input-bg)] rounded-lg text-[11px] font-semibold text-[var(--text-muted)] hover:bg-[var(--surface-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           onclick={handleDelete}
         >
-          DELETE SELECTION
+          {store.currentBreakpoint === 'desktop' ? 'DELETE SELECTION' : 'REMOVE FROM CURRENT VIEW'}
         </button>
       </div>
     </div>

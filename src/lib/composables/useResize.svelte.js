@@ -21,8 +21,24 @@ export function useResize(store, bentoElGetter, options = {}) {
     resizeCellId = id;
     resizeCorner = corner;
 
+    const breakpoint = store.currentBreakpoint;
+    const isDesktop = breakpoint === 'desktop';
     const meta = store.cellMeta[id];
-    const { r, c, colSpan, rowSpan } = meta;
+
+    // Get the current layout for this cell to find anchor
+    let r, c, colSpan, rowSpan;
+    if (isDesktop) {
+        r = meta.r;
+        c = meta.c;
+        rowSpan = meta.rowSpan;
+        colSpan = meta.colSpan;
+    } else {
+        const layout = store.getResponsiveLayout().find(l => l.id === id);
+        r = layout.previewR;
+        c = layout.previewC;
+        rowSpan = layout.previewRowSpan;
+        colSpan = layout.previewColSpan;
+    }
 
     if (corner === "se") resizeAnchor = { r, c };
     if (corner === "sw") resizeAnchor = { r, c: c + colSpan - 1 };

@@ -112,16 +112,56 @@ export class GridStore {
   }
 
   syncSlotMap() {
-    this.slotMap = Array.from({ length: this.internalRows }, () => new Array(this.internalCols).fill(null));
+    const breakpoint = this.currentBreakpoint;
+    const isDesktop = breakpoint === 'desktop';
+    const cols = isDesktop ? this.internalCols : BREAKPOINTS[breakpoint].columns;
+    
+    this.slotMap = Array.from({ length: this.internalRows }, () => new Array(cols).fill(null));
+    
     Object.keys(this.cellMeta).forEach(id => {
       const meta = this.cellMeta[id];
-      if (meta.fused && meta.fusedSlots) {
+      
+      // Get the correct layout for the current breakpoint
+      let r, c, rowSpan, colSpan;
+      
+      if (isDesktop) {
+        r = meta.r;
+        c = meta.c;
+        rowSpan = meta.rowSpan;
+        colSpan = meta.colSpan;
+      } else {
+        const override = meta.overrides?.[breakpoint];
+        if (override) {
+          r = override.r;
+          c = override.c;
+          rowSpan = override.rowSpan;
+          colSpan = override.colSpan;
+        } else {
+          const layout = this.getResponsiveLayout();
+          const cellLayout = layout.find(l => l.id === id);
+          if (!cellLayout) return;
+          r = cellLayout.previewR;
+          c = cellLayout.previewC;
+          rowSpan = cellLayout.previewRowSpan;
+          colSpan = cellLayout.previewColSpan;
+        }
+      }
+
+      if (meta.fused && meta.fusedSlots && isDesktop) {
         for (const key of meta.fusedSlots) {
           const [sr, sc] = key.split(',').map(Number);
           if (this.slotMap[sr]) this.slotMap[sr][sc] = id;
         }
       } else {
-        this.claimSlots(id, meta.r, meta.c, meta.rowSpan, meta.colSpan);
+        // Claim slots in the current slotMap
+        this.ensureRows(r + rowSpan);
+        for (let dr = 0; dr < rowSpan; dr++) {
+          for (let dc = 0; dc < colSpan; dc++) {
+            if (this.slotMap[r + dr]) {
+              this.slotMap[r + dr][c + dc] = id;
+            }
+          }
+        }
       }
     });
   }
@@ -146,6 +186,7 @@ export class GridStore {
       type: 'color',
       imageUrl: '',
       imageStyle: { fit: 'cover', position: 'center', scale: 1, offsetX: 0, offsetY: 0 },
+      overrides: {} // Initialize overrides
     };
 
     this.claimSlots(id, slot.r, slot.c, rowSpan, colSpan);
@@ -219,19 +260,57 @@ export class GridStore {
   computeDisplacePlan(id, nr, nc) {
     const meta = this.cellMeta[id];
     if (!meta) return null;
-    if (nc + meta.colSpan > this.internalCols || nr + meta.rowSpan > this.internalRows) return null;
+    
+    // Check constraints based on current breakpoint
+    const isDesktop = this.currentBreakpoint === 'desktop';
+    const maxCols = isDesktop ? this.internalCols : BREAKPOINTS[this.currentBreakpoint].columns;
+    
+    // Get current dimensions for this breakpoint
+    let colSpan, rowSpan;
+    if (isDesktop) {
+      colSpan = meta.colSpan;
+      rowSpan = meta.rowSpan;
+    } else {
+      const override = meta.overrides?.[this.currentBreakpoint];
+      if (override) {
+        colSpan = override.colSpan;
+        rowSpan = override.rowSpan;
+      } else {
+        const layout = this.getResponsiveLayout().find(l => l.id === id);
+        if (!layout) return null;
+        colSpan = layout.previewColSpan;
+        rowSpan = layout.previewRowSpan;
+      }
+    }
 
-    const oldR = meta.r;
-    const oldC = meta.c;
+    if (nc + colSpan > maxCols || nr + rowSpan > this.internalRows) return null;
+
+    // Get current position for this breakpoint
+    let oldR, oldC;
+    if (isDesktop) {
+      oldR = meta.r;
+      oldC = meta.c;
+    } else {
+      const override = meta.overrides?.[this.currentBreakpoint];
+      if (override) {
+        oldR = override.r;
+        oldC = override.c;
+      } else {
+        const layout = this.getResponsiveLayout().find(l => l.id === id);
+        if (!layout) return null;
+        oldR = layout.previewR;
+        oldC = layout.previewC;
+      }
+    }
 
     const oldFP = new Set();
-    for (let dr = 0; dr < meta.rowSpan; dr++)
-      for (let dc = 0; dc < meta.colSpan; dc++)
+    for (let dr = 0; dr < rowSpan; dr++)
+      for (let dc = 0; dc < colSpan; dc++)
         oldFP.add(`${oldR + dr},${oldC + dc}`);
 
     const newFP = new Set();
-    for (let dr = 0; dr < meta.rowSpan; dr++)
-      for (let dc = 0; dc < meta.colSpan; dc++)
+    for (let dr = 0; dr < rowSpan; dr++)
+      for (let dc = 0; dc < colSpan; dc++)
         newFP.add(`${nr + dr},${nc + dc}`);
 
     const freedSlots = [];
@@ -258,14 +337,33 @@ export class GridStore {
     this.freeSlotsInMap(tempMap, id);
     for (const did of displacedIds) this.freeSlotsInMap(tempMap, did);
 
-    for (let dr = 0; dr < meta.rowSpan; dr++) {
-      for (let dc = 0; dc < meta.colSpan; dc++) {
-        tempMap[nr + dr][nc + dc] = id;
+    for (let dr = 0; dr < rowSpan; dr++) {
+      for (let dc = 0; dc < colSpan; dc++) {
+        if (tempMap[nr + dr]) tempMap[nr + dr][nc + dc] = id;
       }
     }
 
     for (const did of displacedIds) {
       const dMeta = this.cellMeta[did];
+      
+      // Get dimensions for displaced cell at this breakpoint
+      let dColSpan, dRowSpan;
+      if (isDesktop) {
+        dColSpan = dMeta.colSpan;
+        dRowSpan = dMeta.rowSpan;
+      } else {
+        const dOverride = dMeta.overrides?.[this.currentBreakpoint];
+        if (dOverride) {
+          dColSpan = dOverride.colSpan;
+          dRowSpan = dOverride.rowSpan;
+        } else {
+          const dLayout = this.getResponsiveLayout().find(l => l.id === did);
+          if (!dLayout) return null;
+          dColSpan = dLayout.previewColSpan;
+          dRowSpan = dLayout.previewRowSpan;
+        }
+      }
+
       let placed = false;
       const candidates = [{ r: oldR, c: oldC }, ...freedSlots];
       
@@ -279,7 +377,7 @@ export class GridStore {
       }
 
       for (let r = 0; r < this.internalRows; r++) {
-        for (let c = 0; c <= this.internalCols - dMeta.colSpan; c++) {
+        for (let c = 0; c <= maxCols - dColSpan; c++) {
           const key = `${r},${c}`;
           if (!seen.has(key)) {
             seen.add(key);
@@ -289,17 +387,17 @@ export class GridStore {
       }
 
       for (const cand of uniqueCandidates) {
-        if (cand.r + dMeta.rowSpan > this.internalRows || cand.c + dMeta.colSpan > this.internalCols) continue;
+        if (cand.r + dRowSpan > this.internalRows || cand.c + dColSpan > maxCols) continue;
         let fits = true;
-        for (let dr = 0; dr < dMeta.rowSpan && fits; dr++) {
-          for (let dc = 0; dc < dMeta.colSpan && fits; dc++) {
-            if (tempMap[cand.r + dr][cand.c + dc] !== null) fits = false;
+        for (let dr = 0; dr < dRowSpan && fits; dr++) {
+          for (let dc = 0; dc < dColSpan && fits; dc++) {
+            if (tempMap[cand.r + dr]?.[cand.c + dc] !== null) fits = false;
           }
         }
         if (fits) {
-          for (let dr = 0; dr < dMeta.rowSpan; dr++) {
-            for (let dc = 0; dc < dMeta.colSpan; dc++) {
-              tempMap[cand.r + dr][cand.c + dc] = did;
+          for (let dr = 0; dr < dRowSpan; dr++) {
+            for (let dc = 0; dc < dColSpan; dc++) {
+              if (tempMap[cand.r + dr]) tempMap[cand.r + dr][cand.c + dc] = did;
             }
           }
           moves.push({ id: did, r: cand.r, c: cand.c });
@@ -321,64 +419,113 @@ export class GridStore {
   }
 
   applyMove(id, r, c, planMoves = []) {
+    const breakpoint = this.currentBreakpoint;
+    const isDesktop = breakpoint === 'desktop';
     const meta = this.cellMeta[id];
-    const oldR = meta.r;
-    const oldC = meta.c;
-
+    
     this.freeSlots(id);
     for (const m of planMoves) this.freeSlots(m.id);
 
-    meta.r = r;
-    meta.c = c;
-    
-    if (meta.fused && meta.fusedSlots) {
-      const dr = r - oldR;
-      const dc = c - oldC;
-      meta.fusedSlots = meta.fusedSlots.map(key => {
-        const [sr, sc] = key.split(',').map(Number);
-        return `${sr + dr},${sc + dc}`;
-      });
-      this.ensureRows(r + meta.rowSpan);
-      for (const key of meta.fusedSlots) {
-        const [sr, sc] = key.split(',').map(Number);
-        this.slotMap[sr][sc] = id;
+    if (isDesktop) {
+      const oldR = meta.r;
+      const oldC = meta.c;
+      meta.r = r;
+      meta.c = c;
+      
+      if (meta.fused && meta.fusedSlots) {
+        const dr = r - oldR;
+        const dc = c - oldC;
+        meta.fusedSlots = meta.fusedSlots.map(key => {
+          const [sr, sc] = key.split(',').map(Number);
+          return `${sr + dr},${sc + dc}`;
+        });
       }
     } else {
-      this.claimSlots(id, r, c, meta.rowSpan, meta.colSpan);
+      if (!meta.overrides) meta.overrides = {};
+      if (!meta.overrides[breakpoint]) {
+        // Create initial override from current computed layout if not exists
+        const layout = this.getResponsiveLayout().find(l => l.id === id);
+        meta.overrides[breakpoint] = { 
+          r, c, 
+          colSpan: layout.previewColSpan, 
+          rowSpan: layout.previewRowSpan 
+        };
+      } else {
+        meta.overrides[breakpoint].r = r;
+        meta.overrides[breakpoint].c = c;
+      }
     }
 
     for (const m of planMoves) {
       const mMeta = this.cellMeta[m.id];
-      const mOldR = mMeta.r;
-      const mOldC = mMeta.c;
-      mMeta.r = m.r;
-      mMeta.c = m.c;
-      if (mMeta.fused && mMeta.fusedSlots) {
-        const dr = m.r - mOldR;
-        const dc = m.c - mOldC;
-        mMeta.fusedSlots = mMeta.fusedSlots.map(key => {
-          const [sr, sc] = key.split(',').map(Number);
-          return `${sr + dr},${sc + dc}`;
-        });
-        this.ensureRows(mMeta.r + mMeta.rowSpan);
-        for (const key of mMeta.fusedSlots) {
-          const [sr, sc] = key.split(',').map(Number);
-          this.slotMap[sr][sc] = m.id;
+      if (isDesktop) {
+        const mOldR = mMeta.r;
+        const mOldC = mMeta.c;
+        mMeta.r = m.r;
+        mMeta.c = m.c;
+        if (mMeta.fused && mMeta.fusedSlots) {
+          const dr = m.r - mOldR;
+          const dc = m.c - mOldC;
+          mMeta.fusedSlots = mMeta.fusedSlots.map(key => {
+            const [sr, sc] = key.split(',').map(Number);
+            return `${sr + dr},${sc + dc}`;
+          });
         }
       } else {
-        this.claimSlots(m.id, m.r, m.c, mMeta.rowSpan, mMeta.colSpan);
+        if (!mMeta.overrides) mMeta.overrides = {};
+        if (!mMeta.overrides[breakpoint]) {
+            const layout = this.getResponsiveLayout().find(l => l.id === m.id);
+            mMeta.overrides[breakpoint] = { 
+                r: m.r, c: m.c, 
+                colSpan: layout.previewColSpan, 
+                rowSpan: layout.previewRowSpan 
+            };
+        } else {
+            mMeta.overrides[breakpoint].r = m.r;
+            mMeta.overrides[breakpoint].c = m.c;
+        }
       }
     }
+
+    this.syncSlotMap();
   }
 
   planResize(id, newR, newC, newRowSpan, newColSpan) {
-    const oldMeta = this.cellMeta[id];
-    if (!oldMeta) return null;
+    const meta = this.cellMeta[id];
+    if (!meta) return null;
+
+    const breakpoint = this.currentBreakpoint;
+    const isDesktop = breakpoint === 'desktop';
+    const maxCols = isDesktop ? this.internalCols : BREAKPOINTS[breakpoint].columns;
+
+    // Get current position/size for this breakpoint
+    let oldR, oldC, oldRowSpan, oldColSpan;
+    if (isDesktop) {
+        oldR = meta.r;
+        oldC = meta.c;
+        oldRowSpan = meta.rowSpan;
+        oldColSpan = meta.colSpan;
+    } else {
+        const override = meta.overrides?.[breakpoint];
+        if (override) {
+            oldR = override.r;
+            oldC = override.c;
+            oldRowSpan = override.rowSpan;
+            oldColSpan = override.colSpan;
+        } else {
+            const layout = this.getResponsiveLayout().find(l => l.id === id);
+            if (!layout) return null;
+            oldR = layout.previewR;
+            oldC = layout.previewC;
+            oldRowSpan = layout.previewRowSpan;
+            oldColSpan = layout.previewColSpan;
+        }
+    }
 
     const oldFP = new Set();
-    for (let dr = 0; dr < oldMeta.rowSpan; dr++)
-      for (let dc = 0; dc < oldMeta.colSpan; dc++)
-        oldFP.add(`${oldMeta.r + dr},${oldMeta.c + dc}`);
+    for (let dr = 0; dr < oldRowSpan; dr++)
+      for (let dc = 0; dc < oldColSpan; dc++)
+        oldFP.add(`${oldR + dr},${oldC + dc}`);
 
     const newFP = new Set();
     for (let dr = 0; dr < newRowSpan; dr++)
@@ -409,39 +556,58 @@ export class GridStore {
     const tempMap = this.slotMap.map(row => [...row]);
 
     for (let r = 0; r < tempMap.length; r++)
-      for (let c = 0; c < this.internalCols; c++)
+      for (let c = 0; c < maxCols; c++)
         if (tempMap[r][c] === id) tempMap[r][c] = null;
 
     for (const did of displacedIds)
       for (let r = 0; r < tempMap.length; r++)
-        for (let c = 0; c < this.internalCols; c++)
+        for (let c = 0; c < maxCols; c++)
           if (tempMap[r][c] === did) tempMap[r][c] = null;
 
     for (let dr = 0; dr < newRowSpan; dr++)
-      for (let dc = 0; dc < newColSpan; dc++)
-        tempMap[newR + dr][newC + dc] = id;
+      for (let dc = 0; dc < newColSpan; dc++) {
+        if (tempMap[newR + dr]) tempMap[newR + dr][newC + dc] = id;
+      }
 
     for (const did of displacedIds) {
       const dMeta = this.cellMeta[did];
+      
+      let dColSpan, dRowSpan;
+      if (isDesktop) {
+        dColSpan = dMeta.colSpan;
+        dRowSpan = dMeta.rowSpan;
+      } else {
+        const dOverride = dMeta.overrides?.[breakpoint];
+        if (dOverride) {
+            dColSpan = dOverride.colSpan;
+            dRowSpan = dOverride.rowSpan;
+        } else {
+            const dLayout = this.getResponsiveLayout().find(l => l.id === did);
+            if (!dLayout) return null;
+            dColSpan = dLayout.previewColSpan;
+            dRowSpan = dLayout.previewRowSpan;
+        }
+      }
+
       let placed = false;
       const candidates = [...freedSlots];
       for (let r = 0; r < this.internalRows; r++)
-        for (let c = 0; c <= this.internalCols - dMeta.colSpan; c++)
+        for (let c = 0; c <= maxCols - dColSpan; c++)
           candidates.push({ r, c });
 
       for (const cand of candidates) {
-        if (cand.r + dMeta.rowSpan > this.internalRows || cand.c + dMeta.colSpan > this.internalCols) continue;
+        if (cand.r + dRowSpan > this.internalRows || cand.c + dColSpan > maxCols) continue;
         let fits = true;
-        for (let dr = 0; dr < dMeta.rowSpan && fits; dr++)
-          for (let dc = 0; dc < dMeta.colSpan && fits; dc++) {
+        for (let dr = 0; dr < dRowSpan && fits; dr++)
+          for (let dc = 0; dc < dColSpan && fits; dc++) {
             const v = tempMap[cand.r + dr]?.[cand.c + dc] ?? null;
             if (v !== null && v !== did) fits = false;
           }
         if (fits) {
-          for (let dr = 0; dr < dMeta.rowSpan; dr++)
-            for (let dc = 0; dc < dMeta.colSpan; dc++)
-              tempMap[cand.r + dr][cand.c + dc] = did;
-          moves.push({ id: did, r: cand.r, c: cand.c, colSpan: dMeta.colSpan, rowSpan: dMeta.rowSpan });
+          for (let dr = 0; dr < dRowSpan; dr++)
+            for (let dc = 0; dc < dColSpan; dc++)
+              if (tempMap[cand.r + dr]) tempMap[cand.r + dr][cand.c + dc] = did;
+          moves.push({ id: did, r: cand.r, c: cand.c, colSpan: dColSpan, rowSpan: dRowSpan });
           placed = true;
           break;
         }
@@ -449,10 +615,10 @@ export class GridStore {
 
       if (!placed) {
         for (let r = 0; r < this.internalRows && !placed; r++) {
-          for (let c = 0; c < this.internalCols && !placed; c++) {
+          for (let c = 0; c < maxCols && !placed; c++) {
             const v = tempMap[r]?.[c] ?? null;
             if (v === null || v === did) {
-              tempMap[r][c] = did;
+              if (tempMap[r]) tempMap[r][c] = did;
               moves.push({ id: did, r, c, colSpan: 1, rowSpan: 1 });
               placed = true;
             }
@@ -465,36 +631,56 @@ export class GridStore {
   }
 
   applyResize(id, plan) {
+    const breakpoint = this.currentBreakpoint;
+    const isDesktop = breakpoint === 'desktop';
     const involvedIds = new Set([id, ...plan.moves.map(m => m.id)]);
     for (const cid of involvedIds) this.freeSlots(cid);
 
     const meta = this.cellMeta[id];
-    meta.r = plan.newR;
-    meta.c = plan.newC;
-    meta.colSpan = plan.newColSpan;
-    meta.rowSpan = plan.newRowSpan;
-    
-    if (meta.fused) {
-      meta.fused = false;
-      delete meta.fusedSlots;
-      meta.clipPath = '';
+    if (isDesktop) {
+        meta.r = plan.newR;
+        meta.c = plan.newC;
+        meta.colSpan = plan.newColSpan;
+        meta.rowSpan = plan.newRowSpan;
+        if (meta.fused) {
+            meta.fused = false;
+            delete meta.fusedSlots;
+            meta.clipPath = '';
+        }
+    } else {
+        if (!meta.overrides) meta.overrides = {};
+        meta.overrides[breakpoint] = {
+            r: plan.newR,
+            c: plan.newC,
+            rowSpan: plan.newRowSpan,
+            colSpan: plan.newColSpan
+        };
     }
-    this.claimSlots(id, meta.r, meta.c, meta.rowSpan, meta.colSpan);
 
     for (const move of plan.moves) {
       const mMeta = this.cellMeta[move.id];
-      mMeta.r = move.r;
-      mMeta.c = move.c;
-      mMeta.colSpan = move.colSpan;
-      mMeta.rowSpan = move.rowSpan;
-      if (mMeta.fused && (mMeta.colSpan !== move.colSpan || mMeta.rowSpan !== move.rowSpan)) {
-        mMeta.fused = false;
-        delete mMeta.fusedSlots;
-        mMeta.clipPath = '';
+      if (isDesktop) {
+          mMeta.r = move.r;
+          mMeta.c = move.c;
+          mMeta.colSpan = move.colSpan;
+          mMeta.rowSpan = move.rowSpan;
+          if (mMeta.fused && (mMeta.colSpan !== move.colSpan || mMeta.rowSpan !== move.rowSpan)) {
+            mMeta.fused = false;
+            delete mMeta.fusedSlots;
+            mMeta.clipPath = '';
+          }
+      } else {
+          if (!mMeta.overrides) mMeta.overrides = {};
+          mMeta.overrides[breakpoint] = {
+              r: move.r,
+              c: move.c,
+              rowSpan: move.rowSpan,
+              colSpan: move.colSpan
+          };
       }
-      if (mMeta.fused && mMeta.fusedSlots) this.syncSlotMap();
-      else this.claimSlots(move.id, mMeta.r, mMeta.c, mMeta.rowSpan, mMeta.colSpan);
     }
+
+    this.syncSlotMap();
   }
 
   // --- Responsive Preview ---
@@ -502,12 +688,15 @@ export class GridStore {
   setBreakpoint(breakpoint) {
     if (BREAKPOINTS[breakpoint]) {
       this.currentBreakpoint = breakpoint;
+      this.syncSlotMap();
     }
   }
 
   getResponsiveLayout() {
     const cells = Object.values(this.cellMeta);
-    if (this.currentBreakpoint === 'desktop') {
+    const breakpoint = this.currentBreakpoint;
+    
+    if (breakpoint === 'desktop') {
       return cells.map(cell => ({
         ...cell,
         previewR: cell.r,
@@ -519,8 +708,32 @@ export class GridStore {
       }));
     }
 
-    const targetColumns = BREAKPOINTS[this.currentBreakpoint].columns;
-    const sortedCells = [...cells].sort((a, b) => {
+    // Identify which cells have manual overrides and which don't
+    const overrides = [];
+    const needsAuto = [];
+    
+    for (const cell of cells) {
+      if (cell.overrides?.[breakpoint]) {
+        const ov = cell.overrides[breakpoint];
+        overrides.push({
+          ...cell,
+          previewR: ov.r,
+          previewC: ov.c,
+          previewColSpan: ov.colSpan,
+          previewRowSpan: ov.rowSpan,
+          originalAspectRatio: cell.colSpan / cell.rowSpan,
+          isManual: true
+        });
+      } else {
+        needsAuto.push(cell);
+      }
+    }
+
+    if (needsAuto.length === 0) return overrides;
+
+    // Auto-calculate for the rest
+    const targetColumns = BREAKPOINTS[breakpoint].columns;
+    const sortedAuto = [...needsAuto].sort((a, b) => {
       const areaA = a.colSpan * a.rowSpan;
       const areaB = b.colSpan * b.rowSpan;
       if (areaA !== areaB) return areaB - areaA;
@@ -528,13 +741,13 @@ export class GridStore {
       return a.c - b.c;
     });
 
-    const transformedCells = [];
-    for (const cell of sortedCells) {
+    const autoCalculated = [];
+    for (const cell of sortedAuto) {
       const originalArea = cell.colSpan * cell.rowSpan;
       const originalAspectRatio = cell.colSpan / cell.rowSpan;
       let newColSpan, newRowSpan;
       
-      if (this.currentBreakpoint === 'mobile') {
+      if (breakpoint === 'mobile') {
         newColSpan = 1;
         if (cell.type === 'image') {
           if (originalAspectRatio >= 1.5) newRowSpan = 2;
@@ -544,58 +757,67 @@ export class GridStore {
           newRowSpan = Math.max(2, Math.min(3, Math.ceil(originalArea / 2)));
         }
       } else {
-        // Tablet (2 columns): Only span full width if the cell is truly massive (at least 3x3 or equivalent)
         const shouldSpanFull = originalArea >= 32;
         newColSpan = shouldSpanFull ? 2 : 1;
         if (cell.type === 'image') {
-          if (newColSpan === 2) {
-            if (originalAspectRatio >= 1.5) newRowSpan = 2;
-            else if (originalAspectRatio >= 0.8) newRowSpan = 3;
-            else newRowSpan = 4;
-          } else {
-            if (originalAspectRatio >= 1.5) newRowSpan = 2;
-            else if (originalAspectRatio >= 0.8) newRowSpan = 2;
-            else newRowSpan = 3;
-          }
+          newRowSpan = newColSpan === 2 ? (originalAspectRatio >= 1.5 ? 2 : (originalAspectRatio >= 0.8 ? 3 : 4)) : (originalAspectRatio >= 1.5 ? 2 : (originalAspectRatio >= 0.8 ? 2 : 3));
         } else {
           newRowSpan = Math.max(2, Math.min(3, Math.ceil(originalArea / (newColSpan * 2))));
         }
       }
 
-      transformedCells.push({
+      autoCalculated.push({
         ...cell,
         previewR: 0,
         previewC: 0,
         previewColSpan: newColSpan,
         previewRowSpan: newRowSpan,
-        originalArea,
         originalAspectRatio,
-        previewFused: false,
-        previewClipPath: ''
       });
     }
-    return this.compactLayout(transformedCells, targetColumns);
+
+    return this.compactLayout(overrides, autoCalculated, targetColumns);
   }
 
-  compactLayout(cells, targetColumns) {
-    if (cells.length === 0) return [];
-    const columnHeights = new Array(targetColumns).fill(0);
-    const compactedCells = [];
-    for (const cell of cells) {
+  compactLayout(manualCells, autoCells, targetColumns) {
+    const compactedCells = [...manualCells];
+    
+    // Find the current occupancy in slotMap from manual cells
+    let maxRow = 0;
+    manualCells.forEach(c => maxRow = Math.max(maxRow, c.previewR + c.previewRowSpan));
+    
+    const slots = Array.from({ length: maxRow + autoCells.length * 4 }, () => new Array(targetColumns).fill(false));
+    manualCells.forEach(c => {
+        for(let r=0; r<c.previewRowSpan; r++)
+            for(let dc=0; dc<c.previewColSpan; dc++)
+                if(slots[c.previewR + r]) slots[c.previewR + r][c.previewC + dc] = true;
+    });
+
+    for (const cell of autoCells) {
       const colSpan = cell.previewColSpan;
       const rowSpan = cell.previewRowSpan;
-      let bestRow = Infinity;
-      let bestCol = 0;
-      for (let c = 0; c <= targetColumns - colSpan; c++) {
-        let maxHeight = 0;
-        for (let dc = 0; dc < colSpan; dc++) maxHeight = Math.max(maxHeight, columnHeights[c + dc]);
-        if (maxHeight < bestRow) {
-          bestRow = maxHeight;
-          bestCol = c;
+      
+      let placed = false;
+      for (let r = 0; r < slots.length && !placed; r++) {
+        for (let c = 0; c <= targetColumns - colSpan; c++) {
+          let free = true;
+          for (let dr = 0; dr < rowSpan && free; dr++) {
+            for (let dc = 0; dc < colSpan; dc++) {
+              if (slots[r + dr]?.[c + dc] !== false) free = false;
+            }
+          }
+          
+          if (free) {
+            for (let dr = 0; dr < rowSpan; dr++)
+              for (let dc = 0; dc < colSpan; dc++)
+                slots[r + dr][c + dc] = true;
+            
+            compactedCells.push({ ...cell, previewR: r, previewC: c });
+            placed = true;
+            break;
+          }
         }
       }
-      compactedCells.push({ ...cell, previewR: bestRow, previewC: bestCol });
-      for (let dc = 0; dc < colSpan; dc++) columnHeights[bestCol + dc] = bestRow + rowSpan;
     }
     return compactedCells;
   }

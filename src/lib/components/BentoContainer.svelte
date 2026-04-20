@@ -12,21 +12,25 @@
   let isMobile = $state(false);
 
   // Initialize Composables
+  let drag, resize;
+
   const pan = usePan(
     store,
     () => bentoEl,
     () => bentoScaleWrap,
   );
-  const drag = useDrag(
+
+  drag = useDrag(
     store,
     () => bentoEl,
     () => bentoScaleWrap,
     {
-      isResizing: () => resize.isResizing,
+      isResizing: () => resize?.isResizing,
     },
   );
-  const resize = useResize(store, () => bentoEl, {
-    getSlotFromPoint: drag.getSlotFromPoint,
+
+  resize = useResize(store, () => bentoEl, {
+    getSlotFromPoint: (cx, cy, scale) => drag?.getSlotFromPoint(cx, cy, scale),
   });
 
   // Track isMobile for the template
@@ -53,9 +57,13 @@
     return hId;
   });
 
+  // Derived responsive layout
+  let responsiveLayout = $derived(store.getResponsiveLayout());
+  let gridInfo = $derived(store.getPreviewGridDimensions());
+
   // Proxy scaled dimensions
-  let scaledWidth = $derived(store.gridWidth * pan.scale);
-  let scaledHeight = $derived(store.gridHeight * pan.scale);
+  let scaledWidth = $derived(gridInfo.width * pan.scale);
+  let scaledHeight = $derived(gridInfo.rows * ((store.gridHeight / store.internalRows) + store.gridGap) * pan.scale);
 
   function handleMouseMove(e) {
     pan.handleMouseMove(e);
@@ -82,9 +90,7 @@
   bind:this={bentoScaleWrap}
   role="presentation"
   style="
-    height: {isMobile
-    ? scaledHeight + 40 + 'px'
-    : store.gridHeight * pan.scale + 'px'};
+    height: {scaledHeight + 40}px;
     cursor: {pan.isPanning
     ? 'grabbing'
     : pan.isSpacePressed
@@ -108,15 +114,15 @@
         resize.isResizing ||
         pan.isPanning}
       style="
-        width: {store.gridWidth}px;
-        height: {store.gridHeight}px;
+        width: {gridInfo.width}px;
+        height: {(gridInfo.rows * (store.gridHeight / store.internalRows))}px;
         gap: {store.gridGap}px;
-        grid-template-columns: repeat({store.internalCols}, 1fr);
-        grid-template-rows: repeat({store.internalRows}, 1fr);
+        grid-template-columns: repeat({gridInfo.cols}, 1fr);
+        grid-template-rows: repeat({gridInfo.rows}, 1fr);
         transform-origin: top left;
-        transform: {isMobile
-        ? `scale(${pan.scale})`
-        : `translate(${store.gridX}px, ${store.gridY}px) scale(${pan.scale})`};
+        transform: {store.currentBreakpoint === 'desktop' && !isMobile
+        ? `translate(${store.gridX}px, ${store.gridY}px) scale(${pan.scale})`
+        : `scale(${pan.scale})`};
       "
     >
       <canvas
@@ -126,7 +132,7 @@
       ></canvas>
 
       <!-- Cells -->
-      {#each Object.values(store.cellMeta) as meta (meta.id)}
+      {#each responsiveLayout as cell (cell.id)}
         <div
           class="contents {isMultiSelectMode ? 'touch-none' : ''}"
           role="button"
@@ -134,7 +140,7 @@
           onmousedown={(e) =>
             drag.handleDragStart(
               e,
-              meta.id,
+              cell.id,
               pan.scale,
               isMobile,
               isMultiSelectMode,
@@ -142,24 +148,28 @@
           ontouchstart={(e) =>
             drag.handleDragStart(
               e,
-              meta.id,
+              cell.id,
               pan.scale,
               true, // Force isMobile true for touch events to respect the toggle
               isMultiSelectMode,
             )}
           onkeydown={(e) => {
             if (e.key === "Enter" || e.key === " ")
-              store.toggleSelection(meta.id, e.shiftKey);
+              store.toggleSelection(cell.id, e.shiftKey);
           }}
         >
           <GridCell
-            {...meta}
+            {...cell}
+            r={cell.previewR}
+            c={cell.previewC}
+            rowSpan={cell.previewRowSpan}
+            colSpan={cell.previewColSpan}
             cellRadius={store.cellRadius}
-            isSelected={store.selectedCellIds.has(meta.id)}
-            isMultiSelected={store.selectedCellIds.has(meta.id) &&
+            isSelected={store.selectedCellIds.has(cell.id)}
+            isMultiSelected={store.selectedCellIds.has(cell.id) &&
               store.selectedCellIds.size > 1}
-            isHero={heroId === meta.id}
-            isDragging={drag.dragSourceId === meta.id}
+            isHero={heroId === cell.id}
+            isDragging={drag.dragSourceId === cell.id}
             onResizeStart={(id, corner, cx, cy) =>
               resize.handleResizeStart(id, corner, cx, cy, pan.scale)}
           />
@@ -168,6 +178,7 @@
 
       <!-- Snap Indicator -->
       {#if drag.isDragging && drag.snapSlot}
+        {@const sourceMeta = responsiveLayout.find(l => l.id === drag.dragSourceId)}
         <div
           class="snap-indicator absolute pointer-events-none z-10 transition-all duration-200 rounded-[4px] border-[3px] shadow-sm animate-pulseFast
           {drag.snapStatus === 'free'
@@ -183,9 +194,9 @@
           grid-area: {drag.snapSlot.r + 1} / {drag.snapSlot.c + 1} / {drag
             .snapSlot.r +
             1 +
-            store.cellMeta[drag.dragSourceId].rowSpan} / {drag.snapSlot.c +
+            sourceMeta.previewRowSpan} / {drag.snapSlot.c +
             1 +
-            store.cellMeta[drag.dragSourceId].colSpan};
+            sourceMeta.previewColSpan};
         "
         >
           <span

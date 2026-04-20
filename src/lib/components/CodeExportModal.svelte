@@ -1,7 +1,8 @@
 <script>
   import { serializeGrid } from '$lib/serializeGrid';
+  import BentoContainer from './BentoContainer.svelte';
+  import BreakpointSelector from './BreakpointSelector.svelte';
 
-  import ResponsivePreview from './ResponsivePreview.svelte';
   let { store, isOpen, onClose } = $props();
 
   let publishing = $state(false);
@@ -70,7 +71,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-
+          <BreakpointSelector {store} />
           <button
             class="bg-[var(--input-bg)] rounded-lg w-8 h-8 flex items-center justify-center text-xs cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-all font-bold"
             onclick={onClose}>✕</button
@@ -83,8 +84,23 @@
         <div
           class="flex-1 flex overflow-hidden items-center justify-center bg-[var(--code-bg)] relative bg-[radial-gradient(circle,var(--border-subtle)_1px,transparent_1px)] bg-[length:16px_16px]"
         >
-          <div class="w-full h-full">
-            <ResponsivePreview {store} />
+          <div class="w-full h-full overflow-auto flex items-center justify-center p-10">
+             {#key store.currentBreakpoint}
+                {#if store.currentBreakpoint === 'desktop'}
+                    <BentoContainer {store} />
+                {:else}
+                    {@const isMobileView = store.currentBreakpoint === 'mobile'}
+                    <div 
+                    class="device-frame-preview relative bg-[var(--surface)] overflow-hidden rounded-[32px] shadow-2xl border-[6px] border-[#71717a] dark:border-[#2a2a2a] flex flex-col items-center"
+                    style="width: {isMobileView ? 320 : 640}px; height: {isMobileView ? 568 : 800}px; transform: scale(0.85);"
+                    >
+                        <!-- Screen Content -->
+                        <div class="w-full h-full bg-[var(--app-bg)] overflow-auto scrollbar-hide pt-10 pb-8 px-4">
+                            <BentoContainer {store} />
+                        </div>
+                    </div>
+                {/if}
+             {/key}
           </div>
         </div>
 
