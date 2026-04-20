@@ -1,42 +1,134 @@
-# sv
+# Layr
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+<div align="center">
 
-## Creating a project
+![Svelte](https://img.shields.io/badge/Svelte_5-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
+![Three.js](https://img.shields.io/badge/Three.js-000000?style=for-the-badge&logo=threedotjs&logoColor=white)
 
-If you're seeing this, you've probably already done this step. Congrats!
+A high-performance, professional Bento Grid layout builder for modern web interfaces. Design, preview, and export responsive grid systems with a seamless desktop-first workflow.
 
-```sh
-# create a new project
-npx sv create my-app
+**[Launch Playground](/playground)**
+
+</div>
+
+---
+
+## Features
+
+### 📐 **Grid Engineering**
+- **Dynamic Bento System**: Create complex, nested-style layouts with snap-to-grid precision.
+- **Micro-interactions**: Fluid hover scales, dynamic border radii based on cell area, and glassmorphic aesthetics.
+- **Fusion Logic**: Seamlessly union contiguous cells into combined shapes using advanced `clip-path` math.
+
+### 📱 **Responsive Designer**
+- **Multi-Breakpoint Editing**: Direct, interactive editing for Desktop, Tablet, and Mobile views.
+- **Smart Compaction**: Automatic layout rearrangement for smaller screens while preserving design intent.
+- **Device Framing**: Realistic viewport previews to ensure visual consistency across all form factors.
+
+### ⚡ **Professional Workflow**
+- **Spatial Undo/Redo**: Full history tracking (Cmd+Z) for up to 50 actions.
+- **Keyboard Shortcuts**: Rapid shortcuts for Union (U), Delete, and Multi-select (Shift+Click).
+- **Infinite Canvas**: Pan and Zoom with familiar creative tool controls (Space+Drag, Ctrl+Scroll).
+
+### 📤 **Code Generation**
+- **Instant Export**: Generate clean, production-ready Svelte components with Tailwind CSS.
+- **Template Gallery**: Start with professional presets ranging from Portfolio heroes to Dashboard layouts.
+- **One-Click Deploy**: Copy serialized grid data for use in the Layr CLI.
+
+## Tech Stack
+
+### Frontend & Logic
+
+<div>
+
+![Svelte](https://img.shields.io/badge/Svelte_5-FF3E00?style=flat-square&logo=svelte&logoColor=white)
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=flat-square&logo=svelte&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+
+</div>
+
+- **Framework**: Svelte 5 (Runes) + SvelteKit
+- **Styling**: Tailwind CSS 3.4 (Strict Monochrome System)
+- **3D Engine**: Threlte (Three.js for Svelte)
+- **State Management**: Svelte Runes based Snapshot Store
+- **Build Tool**: Vite 7
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/Layr.git
+   cd Layr
+   ```
+
+2. **Install dependencies**
+   ```bash
+   bun i
+   ```
+
+3. **Start Development Server**
+   ```bash
+   bun run dev
+   ```
+
+## Architecture
+
+```
+┌─────────────────────────────────────┐
+│     Bento Designer (Svelte 5)       │
+│  - BentoStore (Runes-based State)   │
+│  - Composables (Pan, Drag, Resize)  │
+│  - SelectionStore (Multi-select)    │
+└──────────────┬──────────────────────┘
+               │ Reactive Updates
+┌──────────────▼──────────────────────┐
+│     Grid Engine (SVG + CSS)         │
+│  - ClipPath Generator (Fusion)      │
+│  - Breakpoint Manager               │
+│  - Serialization Logic              │
+└──────────────┬──────────────────────┘
+               │
+        ┌──────▼──────┐
+        │ LocalStorage│
+        └─────────────┘
 ```
 
-To recreate this project with the same configuration:
+## Responsive Matrix
 
-```sh
-# recreate this project
-bun x sv@0.13.1 create --template minimal --no-types --install bun TabePpuri
-```
+Layr handles layout overrides across three primary breakpoints:
 
-## Developing
+| Viewport | Columns | Behavior |
+|----------|---------|----------|
+| Desktop  | 18      | Full free-form editing and fusion |
+| Tablet   | 2       | Automatic span-to-grid |
+| Mobile   | 1       | Single column vertical stacking |
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Shortcut Cheat Sheet
 
-```sh
-npm run dev
+| Action | Shortcut |
+|--------|----------|
+| Undo | `Cmd + Z` |
+| Redo | `Cmd + Shift + Z` |
+| Union Cells | `U` |
+| Delete Cell | `Delete` |
+| Pan Canvas | `Space + Drag` |
+| Zoom | `Ctrl + Scroll` |
 
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
+---
 
-## Building
+<div align="center">
 
-To create a production version of your app:
+**Engineered for architects of the modern web**
 
-```sh
-npm run build
-```
+[Report Bug](https://github.com/yourusername/Layr/issues) • [Request Feature](https://github.com/yourusername/Layr/issues)
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+</div>
