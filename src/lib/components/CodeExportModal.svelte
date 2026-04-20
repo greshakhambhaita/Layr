@@ -1,6 +1,6 @@
 <script>
   import { serializeGrid } from '$lib/serializeGrid';
-  import BreakpointSelector from './BreakpointSelector.svelte';
+
   import ResponsivePreview from './ResponsivePreview.svelte';
   let { store, isOpen, onClose } = $props();
 
@@ -70,7 +70,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <BreakpointSelector {store} />
+
           <button
             class="bg-[var(--input-bg)] rounded-lg w-8 h-8 flex items-center justify-center text-xs cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--surface-hover)] transition-all font-bold"
             onclick={onClose}>✕</button

@@ -51,6 +51,10 @@
     return null;
   });
 
+  let hPadding = $derived(store.currentBreakpoint === 'mobile' ? 16 : 24);
+  let vPaddingTop = $derived(store.currentBreakpoint === 'mobile' ? 40 : 24);
+  let vPaddingBottom = $derived(store.currentBreakpoint === 'mobile' ? 16 : 24);
+
   async function updateScale() {
     await tick();
     if (!containerEl) return;
@@ -60,14 +64,25 @@
     const availW = rect.width - padding;
     const availH = rect.height - padding;
     
-    // Scale to fit the frame within available space
-    const targetWidth = frameWidth || dimensions.width;
-    const targetHeight = frameHeight || gridHeight;
+    // Calculate full outer dimensions of the frame we're displaying
+    let outerWidth, outerHeight;
     
-    const scaleByWidth = availW / targetWidth;
-    const scaleByHeight = availH / targetHeight;
+    if (store.currentBreakpoint === 'mobile') {
+      outerWidth = 375;
+      outerHeight = 667;
+    } else if (store.currentBreakpoint === 'tablet') {
+      outerWidth = 768;
+      outerHeight = 1024;
+    } else {
+      // Desktop: Frame is grid width + internal padding
+      outerWidth = dimensions.width + (hPadding * 2);
+      outerHeight = gridHeight + vPaddingTop + vPaddingBottom;
+    }
     
-    scale = Math.min(scaleByWidth, scaleByHeight, 1.0, 0.9);
+    const scaleByWidth = availW / outerWidth;
+    const scaleByHeight = availH / outerHeight;
+    
+    scale = Math.min(scaleByWidth, scaleByHeight, 1.0);
   }
 
   onMount(() => {
@@ -99,8 +114,8 @@
     class:border-[#71717a]={store.currentBreakpoint !== 'desktop'}
     class:dark:border-[#2a2a2a]={store.currentBreakpoint !== 'desktop'}
     style="
-      width: {(frameWidth || dimensions.width) * scale}px;
-      height: {(frameHeight || gridHeight) * scale}px;
+      width: {(frameWidth || (dimensions.width + (hPadding * 2))) * scale}px;
+      height: {(frameHeight || (gridHeight + vPaddingTop + vPaddingBottom)) * scale}px;
       transform-origin: center center;
     "
   >
@@ -114,8 +129,8 @@
 
     <!-- Device Screen -->
     <div 
-      class="w-full h-full bg-[var(--app-bg)] overflow-auto flex flex-col"
-      style="padding: {(store.currentBreakpoint === 'mobile' ? 16 : 24) * scale}px; padding-top: {(store.currentBreakpoint === 'mobile' ? 40 : 24) * scale}px;"
+      class="w-full h-full bg-[var(--app-bg)] overflow-auto flex flex-col items-center"
+      style="padding: {hPadding * scale}px; padding-top: {vPaddingTop * scale}px; padding-bottom: {vPaddingBottom * scale}px;"
     >
       <!-- Grid Preview -->
       <div
