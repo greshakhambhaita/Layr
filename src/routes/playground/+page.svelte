@@ -3,10 +3,10 @@
 </script>
 
 <svelte:head>
-	<title>Bento Grid Builder</title>
+	<title>Layr</title>
 	<meta
 		name="description"
-		content="A premium drag-and-drop bento grid builder built with Svelte 5 and Tailwind CSS."
+		content="A premium drag-and-drop Layr built with Svelte 5 and Tailwind CSS."
 	/>
 </svelte:head>
 

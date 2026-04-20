@@ -753,7 +753,7 @@
 </script>
 
 <svelte:head>
-	<title>Templates | Bento Grid Builder</title>
+	<title>Templates | Layr</title>
 </svelte:head>
 
 <main
@@ -807,36 +807,65 @@
 				<div
 					class="sticky top-[70px] md:top-[76px] z-40 w-full px-6 md:px-12 py-4 md:py-6 bg-black/80 backdrop-blur-md border-b border-white/5 transition-all duration-300"
 				>
-					<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+					<div
+						class="flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+					>
 						<!-- Mobile Filter Header -->
 						<div class="flex items-center justify-between w-full lg:w-auto">
 							<div class="flex items-center gap-4">
-								<span class="text-xs text-white/40 uppercase tracking-[0.4em] font-black italic whitespace-nowrap">Engine Filter</span>
-								<div class="px-2 py-0.5 rounded-full bg-white/10 text-[9px] text-white/60 font-mono lg:hidden">
+								<span
+									class="text-xs text-white/40 uppercase tracking-[0.4em] font-black italic whitespace-nowrap"
+									>Engine Filter</span
+								>
+								<div
+									class="px-2 py-0.5 rounded-full bg-white/10 text-[9px] text-white/60 font-mono lg:hidden"
+								>
 									{activeCategory}
 								</div>
 							</div>
-							
-							<button 
-								onclick={() => isFilterMenuOpen = !isFilterMenuOpen}
+
+							<button
+								onclick={() => (isFilterMenuOpen = !isFilterMenuOpen)}
 								class="lg:hidden p-2 -mr-2 text-white/60 hover:text-white transition-colors"
 								aria-label="Toggle filters"
 							>
 								{#if isFilterMenuOpen}
-									<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+									<svg
+										class="w-6 h-6"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M6 18L18 6M6 6l12 12"
+										/>
 									</svg>
 								{:else}
-									<svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+									<svg
+										class="w-6 h-6"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M4 6h16M4 12h16m-7 6h7"
+										/>
 									</svg>
 								{/if}
 							</button>
 						</div>
 
 						<!-- Filter Options -->
-						<div 
-							class="{isFilterMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 w-full lg:w-auto overflow-hidden transition-all duration-500"
+						<div
+							class="{isFilterMenuOpen
+								? 'flex'
+								: 'hidden'} lg:flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 w-full lg:w-auto overflow-hidden transition-all duration-500"
 							in:fade={{ duration: 200 }}
 						>
 							{#each ["All", "Portfolio", "Minimal", "Editorial"] as category}
@@ -845,7 +874,8 @@
 										activeCategory = category;
 										isFilterMenuOpen = false;
 									}}
-									class="px-6 py-2.5 rounded-full border-2 transition-all uppercase tracking-[0.25em] text-[11px] font-black text-center {activeCategory === category
+									class="px-6 py-2.5 rounded-full border-2 transition-all uppercase tracking-[0.25em] text-[11px] font-black text-center {activeCategory ===
+									category
 										? 'border-white bg-white text-black'
 										: 'border-white/10 text-white/40 hover:border-white/40 hover:text-white'}"
 								>
@@ -855,7 +885,6 @@
 						</div>
 					</div>
 				</div>
-
 
 				<div class="w-full grid grid-cols-1 md:grid-cols-2">
 					{#each allTemplates as template, i}
@@ -1028,7 +1057,6 @@
 							>Documentation</span
 						>
 						<div class="flex flex-col gap-3">
-
 							<a
 								href="/templates"
 								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
