@@ -1034,59 +1034,60 @@
 				</div>
 			</div>
 
-			<!-- Technical Footer -->
+			<!-- Footer -->
 			<footer
-				class="w-full border-t-2 border-white/20 bg-white/[0.02] px-6 md:px-12 py-20 flex flex-col md:flex-row justify-between items-start gap-16"
+				class="w-full mt-48 border-t-2 border-white/20 px-6 md:px-12 pt-12 pb-8 flex flex-col md:flex-row justify-between items-start gap-20"
 			>
 				<div class="flex flex-col gap-8">
 					<div class="flex items-center gap-5 opacity-100">
-						<img src={Logo} alt="" class="h-6 invert" />
-						<div class="h-4 w-[1px] bg-white/40"></div>
-						<span class="text-sm uppercase tracking-[0.4em] font-black italic"
-							>Bento Grid Engine v1.2</span
+						<img src={Logo} alt="" class="h-8 invert" />
+						<div class="h-6 w-[1px] bg-white/40"></div>
+						<span
+							class="text-base font-jomolhari uppercase tracking-[0.5em] font-black"
+							>Bento Grid Engine</span
 						>
 					</div>
 					<p
-						class="text-sm text-white/50 font-light max-w-sm leading-relaxed uppercase tracking-[0.2em]"
+						class="text-base text-white/60 font-light max-w-sm leading-relaxed uppercase tracking-[0.2em]"
 					>
-						An open-source utility for designing high-density responsive grid
-						systems visually.
+						Designed for modern designers and engineers building the future of the
+						web.
 					</p>
 				</div>
-				<div class="flex gap-20 text-white/40">
+				<div class="flex gap-24 text-white/50">
 					<div class="flex flex-col gap-6">
 						<span
-							class="text-xs uppercase tracking-[0.3em] font-black text-white/80"
-							>Documentation</span
+							class="text-xs uppercase tracking-[0.4em] font-black text-white/90"
+							>Engine</span
 						>
-						<div class="flex flex-col gap-3">
+						<div class="flex flex-col gap-4">
 							<a
 								href="/templates"
 								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
-								>Patterns</a
+								>Core Patterns</a
+							>
+							<a
+								href="/playground"
+								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
+								>Interactive Editor</a
 							>
 						</div>
 					</div>
 					<div class="flex flex-col gap-6">
 						<span
-							class="text-xs uppercase tracking-[0.3em] font-black text-white/80"
-							>Community</span
+							class="text-xs uppercase tracking-[0.4em] font-black text-white/90"
+							>Project</span
 						>
-						<div class="flex flex-col gap-3">
+						<div class="flex flex-col gap-4">
 							<a
-								href="/"
+								href="/guide"
 								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
-								>GitHub</a
+								>Technical Guide</a
 							>
 							<a
 								href="/"
 								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
-								>Discord</a
-							>
-							<a
-								href="/"
-								class="text-[11px] uppercase tracking-[0.2em] hover:text-white transition-colors"
-								>Twitter</a
+								>GitHub Repository</a
 							>
 						</div>
 					</div>

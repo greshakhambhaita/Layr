@@ -370,7 +370,7 @@
 
 		<!-- Footer -->
 		<footer
-			class="w-full mt-48 border-t-2 border-white/20 pt-16 pb-20 flex flex-col md:flex-row justify-between items-start gap-20"
+			class="w-full mt-48 border-t-2 border-white/20 pt-12 flex flex-col md:flex-row justify-between items-start gap-20"
 		>
 			<div class="flex flex-col gap-8">
 				<div class="flex items-center gap-5 opacity-100">
